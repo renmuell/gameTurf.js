@@ -1,0 +1,35 @@
+{
+  "name": "gameturfjs",
+  "version": "0.0.1",
+  "description": "javascript 2d game engine",
+  "main": "release/gameTurf.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/renmuell/gameTurf.js.git"
+  },
+  "keywords": [
+    "game",
+    "engine",
+    "2d"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/renmuell/gameTurf.js/issues"
+  },
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-browserify": "^0.5.1",
+    "gulp-eslint": "^5.0.0",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-tape": "^1.0.0",
+    "gulp-uglify": "^3.0.1",
+    "gulp-rename": "^1.4.0",
+    "nyc": "^13.0.1",
+    "tape": "^4.9.1"
+  },
+  "homepage": "https://github.com/renmuell/gameTurf.js#readme"
+}

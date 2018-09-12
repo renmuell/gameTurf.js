@@ -1,0 +1,23 @@
+{
+    "env": {
+      "browser": true
+    },
+    "parserOptions": {
+      "sourceType": "module"
+    },
+    "extends": "eslint:recommended",
+    "rules": {
+      "valid-jsdoc": [ "error", {
+        "matchDescription": "^\\s*[A-Z]"
+      }],
+      "require-jsdoc": ["error", {
+        "require": {
+            "FunctionDeclaration": true,
+            "MethodDefinition": true,
+            "ClassDeclaration": true,
+            "ArrowFunctionExpression": true,
+            "FunctionExpression": true
+        }
+      }]
+    }
+  }
