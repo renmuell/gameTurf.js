@@ -46,10 +46,18 @@ var game = {
     /**
      *  
      */
-  , init: function() {
+  , init: function(_settings) {
+
+      settings = Object.assign(
+        settings,
+        _settings
+      )
+
       if (game.showStats) game.statsSetup()
 
       theatre.init(settings.theatreMovesWithPlayer)
+
+      sound.init()
 
       ui.init(function(){
         game.run()
@@ -456,17 +464,25 @@ module.exports = {
     /**
      *  
      */ 
-  , backgroundMusicVolume : 0.1
-
-    /**
-     *  
-     */ 
   , effectMusicVolume     : 1
 
     /**
      *  
      */
   , theatreMovesWithPlayer : true
+
+    /**
+     *  
+     */
+  , effects : []
+
+    /**
+     *  
+     */
+  , backgroundSong: {
+      src: undefined,
+      volume: 1
+    }
 }
 
 }());
@@ -508,17 +524,19 @@ var sound = {
 
       if (settings.soundEngineOn) {
 
-        sound.addEffect('colide' , "sounds/jump.ogg"  , .03)
-        sound.addEffect('hello'  , "sounds/hello.ogg" , .03)
-        sound.addEffect('walk'   , "sounds/walk.ogg"  ,  .7)
-        sound.addEffect('running', "sounds/walk.ogg"  ,   1)
-        sound.addEffect('wind'   , "sounds/breath.ogg",  .4)
+        if (settings.effects) {
+          settings.effects.forEach(function(effect){
+            sound.addEffect(effect.id, effect.src , effect.volume)
+          })
+        }
 
-        if (settings.alloweBackgroundMusic) {
+        if (settings.alloweBackgroundMusic
+         && settings.backgroundSong.src) {
+         
           sound.backgroundSong = new Howl({
-              src   : ['sounds/inside.mp3']
+              src   : [setting.backgroundSong.src]
             , loop  : true
-            , volume: settings.backgroundMusicVolume
+            , volume: setting.backgroundSong.volume
           })
         }
       }
@@ -591,8 +609,6 @@ var sound = {
       }
     }
 }
-
-sound.init()
 
 module.exports = sound
 

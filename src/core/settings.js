@@ -46,17 +46,25 @@ module.exports = {
     /**
      *  
      */ 
-  , backgroundMusicVolume : 0.1
-
-    /**
-     *  
-     */ 
   , effectMusicVolume     : 1
 
     /**
      *  
      */
   , theatreMovesWithPlayer : true
+
+    /**
+     *  
+     */
+  , effects : []
+
+    /**
+     *  
+     */
+  , backgroundSong: {
+      src: undefined,
+      volume: 1
+    }
 }
 
 }());

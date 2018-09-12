@@ -45,10 +45,18 @@ var game = {
     /**
      *  
      */
-  , init: function() {
+  , init: function(_settings) {
+
+      settings = Object.assign(
+        settings,
+        _settings
+      )
+
       if (game.showStats) game.statsSetup()
 
       theatre.init(settings.theatreMovesWithPlayer)
+
+      sound.init()
 
       ui.init(function(){
         game.run()
