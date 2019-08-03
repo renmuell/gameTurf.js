@@ -46,7 +46,7 @@ module.exports = {
     /**
      *  
      */ 
-  , effectMusicVolume     : 1
+  , effectMusicVolume     : .2
 
     /**
      *  

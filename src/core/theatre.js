@@ -45,11 +45,11 @@ var theatre = {
 
   , worldNeedsRedraw     : true
 
-//    , canvasHeight         : window.innerHeight
-//    , canvasWidth          : window.innerWidth
+    , canvasHeight         : window.innerHeight
+    , canvasWidth          : window.innerWidth
 
-  , canvasHeight         : 400
-  , canvasWidth          : 400
+  //, canvasHeight         : 400
+  //, canvasWidth          : 400
 
     /**
      *  
@@ -73,7 +73,7 @@ var theatre = {
 
       theatre.waterCanvas
       theatre.resize()
-
+      
       window.addEventListener('resize', theatre.resize, false)
     }
 

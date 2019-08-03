@@ -12,6 +12,7 @@ var util      = require('./../core/util')
 var world     = require('./../systems/world')
 var settings  = require('./../core/settings')
 var theatre   = require('./../core/theatre')
+var entityManager = require('./../managers/entityManager')
 
 module.exports = function(config){
 
@@ -39,6 +40,8 @@ module.exports = function(config){
     , halfHeight   : undefined
     , isRunning    : false
     , collsition   : false
+    , objectCollision: false
+    , entityCollisions: []
     , hitBox       : undefined
     , currentSpeed : 0
 
@@ -102,6 +105,33 @@ module.exports = function(config){
           physics.isMoving = true
 
           physics.collsition = physics.collsitionDetection()
+
+          if (physics.objectCollision) {
+
+            var entity = false;
+
+            for (var i = 0; i < physics.entityCollisions.length; i++) {
+              if (physics.entityCollisions[i]) {
+                entity = entityManager.enitites[i]
+              }
+            }
+
+            if (entity) {
+              
+              var hitBox = physics.getHitBox()
+              var entityHitBox  = entity.physics.getHitBox()
+        
+              var objectIsLeft  = physics.x > entity.physics.x && hitBox.Left   < entityHitBox.Right
+              , objectIsRight   = physics.x < entity.physics.x && hitBox.Right  > entityHitBox.Left
+              , objectIsUp      = physics.y > entity.physics.y && hitBox.Top    < entityHitBox.Bottom
+              , objectIsDown    = physics.y < entity.physics.y && hitBox.Bottom > entityHitBox.Top
+
+              if (objectIsRight && physics.velocity.x > 0) physics.velocity.x = 0
+              if (objectIsLeft  && physics.velocity.x < 0) physics.velocity.x = 0
+              if (objectIsDown  && physics.velocity.y > 0) physics.velocity.y = 0
+              if (objectIsUp    && physics.velocity.y < 0) physics.velocity.y = 0
+            }
+          }
 
           physics.x += physics.velocity.x
           physics.y += physics.velocity.y
@@ -189,6 +219,11 @@ module.exports = function(config){
         util.shrinkVectorToLength(physics.velocity, value)
         physics.calculateSpeed()
       }
+
+    , setObjectCollision: function (value, entityCollisions) {
+      physics.objectCollision = value
+      physics.entityCollisions = entityCollisions
+    }
 
     , calculateSpeed: function(){
         physics.currentSpeed = util.vectorLength(physics.velocity)

@@ -121,8 +121,8 @@ var game = {
   , update: function(){
       wind.update()
       worldCollsitionDetection.update()
-      entityManager.update()
       entityCollisionDetection.update()
+      entityManager.update()
     }
 
     /**
@@ -464,7 +464,7 @@ module.exports = {
     /**
      *  
      */ 
-  , effectMusicVolume     : 1
+  , effectMusicVolume     : .2
 
     /**
      *  
@@ -662,11 +662,11 @@ var theatre = {
 
   , worldNeedsRedraw     : true
 
-//    , canvasHeight         : window.innerHeight
-//    , canvasWidth          : window.innerWidth
+    , canvasHeight         : window.innerHeight
+    , canvasWidth          : window.innerWidth
 
-  , canvasHeight         : 400
-  , canvasWidth          : 400
+  //, canvasHeight         : 400
+  //, canvasWidth          : 400
 
     /**
      *  
@@ -690,7 +690,7 @@ var theatre = {
 
       theatre.waterCanvas
       theatre.resize()
-
+      
       window.addEventListener('resize', theatre.resize, false)
     }
 
@@ -1380,7 +1380,7 @@ var entityCollisionDetection = {
 
       var entityId =entityManager.visableEntities[i].id
       var entity = entityManager.enitites[entityId]
-      var checkEntites = entityManager.tree.retrieveInBounds(entityManager.visableEntities[i])
+      var checkEntites = entityManager.visableEntities
 
       for (var y = checkEntites.length - 1; y >= 0; y--) {
 
@@ -1395,7 +1395,7 @@ var entityCollisionDetection = {
               entityCollisionDetection.calculateEntitiesCollisionReaction(entity, checkEntity)
 
               entity.entityCollisions[checkEntity.Id] = true
-              checkEntity.entityCollisions[entity.Id] = true
+              checkEntity.entityCollisions[entity.Id] =  true
             }
           } else {
             entity.entityCollisions[checkEntity.Id] = false
@@ -1403,6 +1403,16 @@ var entityCollisionDetection = {
           }
         }
       }
+
+      var objectCollision = false;
+      for (var z = 0; z < entity.entityCollisions.length; z++) {
+        if (entity.entityCollisions[z]) {
+          objectCollision = true
+          break
+        }
+      }
+      
+      entity.physics.setObjectCollision(objectCollision, entity.entityCollisions)
     }
   }
 
@@ -2111,6 +2121,7 @@ var util      = _dereq_('./../core/util')
 var world     = _dereq_('./../systems/world')
 var settings  = _dereq_('./../core/settings')
 var theatre   = _dereq_('./../core/theatre')
+var entityManager = _dereq_('./../managers/entityManager')
 
 module.exports = function(config){
 
@@ -2138,6 +2149,8 @@ module.exports = function(config){
     , halfHeight   : undefined
     , isRunning    : false
     , collsition   : false
+    , objectCollision: false
+    , entityCollisions: []
     , hitBox       : undefined
     , currentSpeed : 0
 
@@ -2201,6 +2214,33 @@ module.exports = function(config){
           physics.isMoving = true
 
           physics.collsition = physics.collsitionDetection()
+
+          if (physics.objectCollision) {
+
+            var entity = false;
+
+            for (var i = 0; i < physics.entityCollisions.length; i++) {
+              if (physics.entityCollisions[i]) {
+                entity = entityManager.enitites[i]
+              }
+            }
+
+            if (entity) {
+              
+              var hitBox = physics.getHitBox()
+              var entityHitBox  = entity.physics.getHitBox()
+        
+              var objectIsLeft  = physics.x > entity.physics.x && hitBox.Left   < entityHitBox.Right
+              , objectIsRight   = physics.x < entity.physics.x && hitBox.Right  > entityHitBox.Left
+              , objectIsUp      = physics.y > entity.physics.y && hitBox.Top    < entityHitBox.Bottom
+              , objectIsDown    = physics.y < entity.physics.y && hitBox.Bottom > entityHitBox.Top
+
+              if (objectIsRight && physics.velocity.x > 0) physics.velocity.x = 0
+              if (objectIsLeft  && physics.velocity.x < 0) physics.velocity.x = 0
+              if (objectIsDown  && physics.velocity.y > 0) physics.velocity.y = 0
+              if (objectIsUp    && physics.velocity.y < 0) physics.velocity.y = 0
+            }
+          }
 
           physics.x += physics.velocity.x
           physics.y += physics.velocity.y
@@ -2289,6 +2329,11 @@ module.exports = function(config){
         physics.calculateSpeed()
       }
 
+    , setObjectCollision: function (value, entityCollisions) {
+      physics.objectCollision = value
+      physics.entityCollisions = entityCollisions
+    }
+
     , calculateSpeed: function(){
         physics.currentSpeed = util.vectorLength(physics.velocity)
       }
@@ -2301,7 +2346,7 @@ module.exports = function(config){
 
 }());
 
-},{"./../core/settings":4,"./../core/theatre":6,"./../core/util":8,"./../systems/world":19}],14:[function(_dereq_,module,exports){
+},{"./../core/settings":4,"./../core/theatre":6,"./../core/util":8,"./../managers/entityManager":16,"./../systems/world":19}],14:[function(_dereq_,module,exports){
 /******************************************************************************
  * gameTurf.js
  *
@@ -2350,6 +2395,7 @@ var settings  = _dereq_('./../core/settings')
 var tileHelper = {
 
     tileWalls: []
+  , grassHalmPositions: []
   , neahrestTileWalls: []
 
     /**
@@ -2557,25 +2603,31 @@ var tileHelper = {
           theatre.drawSquareFromLeftTopCorner(
             'backdrop'
           , tilePosition
-          , settings.tileSize
+          , settings.tileSize +1
           , "#CCDDAF")
 
-          //tileHelper.drawGrass(tilePosition, tileWidth, tileHeight)
+          tileHelper.drawGrass(tilePosition, tileWidth, tileHeight)
         }
       }
     }
   
-  , drawGrass: function(position, width, heigth){
+  , drawGrass: function(position, width, height){
       for (var i = 10; i >= 0; i--) {
-        
-        var grassHalmPositon = {
-          x: position.x + (((Math.random() * width)  - 10) + 5)
-        , y: position.y + (((Math.random() * heigth) - 10) + 5)
+
+        var grassHalmPosition;
+        var key = position.x + ";" + position.y + ";" + i;
+        if (tileHelper.grassHalmPositions[key]) {
+          grassHalmPosition = tileHelper.grassHalmPositions[key];
+        } else {
+          grassHalmPosition = tileHelper.grassHalmPositions[key] = {
+            x: position.x + (((Math.random() * width)  - 10) + 5)
+          , y: position.y + (((Math.random() * height) - 10) + 5)
+          }
         }
 
         theatre.drawSquareFromLeftTopCorner(
           'backdrop'
-        , grassHalmPositon
+        , grassHalmPosition
         , 5
         , "rgba(167,191,127,0.3)")
       }

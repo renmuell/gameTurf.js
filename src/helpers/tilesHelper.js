@@ -14,6 +14,7 @@ var settings  = require('./../core/settings')
 var tileHelper = {
 
     tileWalls: []
+  , grassHalmPositions: []
   , neahrestTileWalls: []
 
     /**
@@ -221,25 +222,31 @@ var tileHelper = {
           theatre.drawSquareFromLeftTopCorner(
             'backdrop'
           , tilePosition
-          , settings.tileSize
+          , settings.tileSize +1
           , "#CCDDAF")
 
-          //tileHelper.drawGrass(tilePosition, tileWidth, tileHeight)
+          tileHelper.drawGrass(tilePosition, tileWidth, tileHeight)
         }
       }
     }
   
-  , drawGrass: function(position, width, heigth){
+  , drawGrass: function(position, width, height){
       for (var i = 10; i >= 0; i--) {
-        
-        var grassHalmPositon = {
-          x: position.x + (((Math.random() * width)  - 10) + 5)
-        , y: position.y + (((Math.random() * heigth) - 10) + 5)
+
+        var grassHalmPosition;
+        var key = position.x + ";" + position.y + ";" + i;
+        if (tileHelper.grassHalmPositions[key]) {
+          grassHalmPosition = tileHelper.grassHalmPositions[key];
+        } else {
+          grassHalmPosition = tileHelper.grassHalmPositions[key] = {
+            x: position.x + (((Math.random() * width)  - 10) + 5)
+          , y: position.y + (((Math.random() * height) - 10) + 5)
+          }
         }
 
         theatre.drawSquareFromLeftTopCorner(
           'backdrop'
-        , grassHalmPositon
+        , grassHalmPosition
         , 5
         , "rgba(167,191,127,0.3)")
       }

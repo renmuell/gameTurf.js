@@ -31,7 +31,7 @@ var entityCollisionDetection = {
 
       var entityId =entityManager.visableEntities[i].id
       var entity = entityManager.enitites[entityId]
-      var checkEntites = entityManager.tree.retrieveInBounds(entityManager.visableEntities[i])
+      var checkEntites = entityManager.visableEntities
 
       for (var y = checkEntites.length - 1; y >= 0; y--) {
 
@@ -46,7 +46,7 @@ var entityCollisionDetection = {
               entityCollisionDetection.calculateEntitiesCollisionReaction(entity, checkEntity)
 
               entity.entityCollisions[checkEntity.Id] = true
-              checkEntity.entityCollisions[entity.Id] = true
+              checkEntity.entityCollisions[entity.Id] =  true
             }
           } else {
             entity.entityCollisions[checkEntity.Id] = false
@@ -54,6 +54,16 @@ var entityCollisionDetection = {
           }
         }
       }
+
+      var objectCollision = false;
+      for (var z = 0; z < entity.entityCollisions.length; z++) {
+        if (entity.entityCollisions[z]) {
+          objectCollision = true
+          break
+        }
+      }
+      
+      entity.physics.setObjectCollision(objectCollision, entity.entityCollisions)
     }
   }
 

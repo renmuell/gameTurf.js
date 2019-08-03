@@ -120,8 +120,8 @@ var game = {
   , update: function(){
       wind.update()
       worldCollsitionDetection.update()
-      entityManager.update()
       entityCollisionDetection.update()
+      entityManager.update()
     }
 
     /**
