@@ -123,8 +123,8 @@ module.exports = function(config){
     , drawNoramlFace: function(physics) {
 
         // left eye
-        face.leftEyePosition.x = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y = physics.y - (physics.height * 0.1)
+        face.leftEyePosition.x = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y = physics.position.y - (physics.height * 0.1)
         theatre.drawLine(
           'stage'
         , face.leftEyePosition
@@ -132,8 +132,8 @@ module.exports = function(config){
         , face.color)
 
         // right eye
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.1)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.1)
         theatre.drawLine(
           'stage'
         , face.rightEyePosition
@@ -141,8 +141,8 @@ module.exports = function(config){
         , face.color)
 
         // close mouth
-        face.mouthPosition.x = physics.x - (physics.width  * 0.2)
-        face.mouthPosition.y = physics.y + (physics.height * 0.3)
+        face.mouthPosition.x = physics.position.x - (physics.width  * 0.2)
+        face.mouthPosition.y = physics.position.y + (physics.height * 0.3)
         theatre.drawLine(
           'stage'
         , face.mouthPosition
@@ -152,8 +152,8 @@ module.exports = function(config){
 
     , drawNoramlFaceOpenEyes: function(physics) {
         // linkes auge
-        face.leftEyePosition.x = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y = physics.y - (physics.height * 0.2)
+        face.leftEyePosition.x = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y = physics.position.y - (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.leftEyePosition
@@ -161,8 +161,8 @@ module.exports = function(config){
         , face.color)
 
         // rechtes auge
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.2)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.rightEyePosition
@@ -170,8 +170,8 @@ module.exports = function(config){
         , face.color)
 
         // closed mund
-        face.mouthPosition.x = physics.x - (physics.width  * 0.2)
-        face.mouthPosition.y = physics.y + (physics.height * 0.3)
+        face.mouthPosition.x = physics.position.x - (physics.width  * 0.2)
+        face.mouthPosition.y = physics.position.y + (physics.height * 0.3)
         theatre.drawLine(
           'stage'
         , face.mouthPosition
@@ -181,8 +181,8 @@ module.exports = function(config){
 
     , drawSurpiseFace: function(physics){
         // linkes auge
-        face.leftEyePosition.x = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y = physics.y - (physics.height * 0.2)
+        face.leftEyePosition.x = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y = physics.position.y - (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.leftEyePosition
@@ -190,8 +190,8 @@ module.exports = function(config){
         , face.color)
 
         // rechtes auge
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.2)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.rightEyePosition
@@ -199,8 +199,8 @@ module.exports = function(config){
         , face.color)
 
         // mund
-        face.mouthPosition.x = physics.x - (physics.width  * 0.1)
-        face.mouthPosition.y = physics.y + (physics.height * 0.2)
+        face.mouthPosition.x = physics.position.x - (physics.width  * 0.1)
+        face.mouthPosition.y = physics.position.y + (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.mouthPosition
@@ -210,44 +210,44 @@ module.exports = function(config){
 
     , drawFaceLookLeft: function(physics){
 
-        face.leftEyePosition.x  = physics.x - (physics.width  * 0.4)
-        face.leftEyePosition.y  = physics.y - (physics.height * 0.2)
+        face.leftEyePosition.x  = physics.position.x - (physics.width  * 0.4)
+        face.leftEyePosition.y  = physics.position.y - (physics.height * 0.2)
 
-        face.rightEyePosition.x = physics.x
-        face.rightEyePosition.y = physics.y - (physics.height * 0.2)
+        face.rightEyePosition.x = physics.position.x
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.2)
 
         face.drawFaceLook(physics)
       }
 
     , drawFaceLookRight: function(physics){
 
-        face.leftEyePosition.x  = physics.x - (physics.width  * 0.2)
-        face.leftEyePosition.y  = physics.y - (physics.height * 0.2)
+        face.leftEyePosition.x  = physics.position.x - (physics.width  * 0.2)
+        face.leftEyePosition.y  = physics.position.y - (physics.height * 0.2)
 
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.2)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.2)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.2)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.2)
 
         face.drawFaceLook(physics)
       }
 
     , drawFaceLookTop: function(physics){
 
-        face.leftEyePosition.x  = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y  = physics.y - (physics.height * 0.25)
+        face.leftEyePosition.x  = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y  = physics.position.y - (physics.height * 0.25)
 
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.25)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.25)
 
         face.drawFaceLook(physics)
       }
 
     , drawFaceLookDown: function(physics){
 
-        face.leftEyePosition.x  = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y  = physics.y - (physics.height * 0.15)
+        face.leftEyePosition.x  = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y  = physics.position.y - (physics.height * 0.15)
 
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.15)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.15)
 
         face.drawFaceLook(physics)
       }
@@ -279,8 +279,8 @@ module.exports = function(config){
         , face.color)
 
         // close mouth
-        face.mouthPosition.x = physics.x - (physics.width  * 0.2) + offsetX
-        face.mouthPosition.y = physics.y + (physics.height * 0.3) + offsetY
+        face.mouthPosition.x = physics.position.x - (physics.width  * 0.2) + offsetX
+        face.mouthPosition.y = physics.position.y + (physics.height * 0.3) + offsetY
 
         theatre.drawLine(
           'stage'

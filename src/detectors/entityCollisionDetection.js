@@ -25,7 +25,7 @@ var entityCollisionDetection = {
   /**
    *  
    */ 
-, update: function(){
+, update: function(timeElapsed){
 
     for (var i = entityManager.visableEntities.length - 1; i >= 0; i--) {
 

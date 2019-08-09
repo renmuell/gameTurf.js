@@ -30,12 +30,40 @@ var Stats                     = require('../../vendors/stats.min')
 var game = {
 
     /**
-     *  Gets current running state of the engine.
-     *  
-     *  @public
-     *  @type {boolean}
+     *  Time of last step
+     *  @type {date}
      */
-    isRunning              : false
+    stepTimeThen: 0
+
+    /**
+     *  Time of step
+     *  @type {date}
+     */
+  , stepTimeNow: 0
+
+    /**
+     *  Elapsed time since last step
+     *  @type {number}
+     */
+  , stepTimeElapsed: 0
+
+    /**
+     *  
+     *  @type {number}
+     */  
+  , timestep: 1000 / 60
+
+  , maxFPS: 60
+
+    /**
+     *  is engine running
+     *  @type {bool}
+     */
+  ,  isRunning              : false
+
+  ,  fps: 60
+  ,  framesThisSecond: 0
+  ,  lastFpsUpdate: 0
 
     /**
      *  
@@ -58,7 +86,7 @@ var game = {
 
       sound.init()
 
-      ui.init(function(){
+      ui.init(theatre, function(){
         game.run()
       })
 
@@ -81,6 +109,9 @@ var game = {
      */
   , run: function(){
       game.isRunning = true
+      game.stepTimeElapsed = 0
+      game.stepTimeNow = 0
+      game.stepTimeThen = 0
       ui.closeMenu()
       sound.playBackgroundSound()
       requestAnimationFrame(game.loop)
@@ -93,6 +124,9 @@ var game = {
       ui.openMenu()
       sound.pauseBackgroundSound()
       game.isRunning = false
+      game.stepTimeElapsed = 0
+      game.stepTimeNow = 0
+      game.stepTimeThen = 0
     }
 
     /**
@@ -101,61 +135,102 @@ var game = {
   , loop: function(){
       if (game.isRunning) {
 
-        if (game.showStats) game.stats.begin()
+        game.stepTimeNow = new Date().getTime()
 
-        game.update()
-        game.postUpdate()
-        game.preDraw()
-        game.draw()
+
+        if (game.stepTimeThen !== 0) {
+          game.stepTimeElapsed 
+            = game.stepTimeNow - game.stepTimeThen
+        }
+
+        if (game.showStats) game.stats.begin();
+
+        if (game.stepTimeElapsed  < game.lastFrameTimeMs + (1000 / game.maxFPS)) {
+            requestAnimationFrame(game.loop);
+            return;
+        }
+
+        if (game.stepTimeElapsed  > game.lastFpsUpdate + 1000) { // update every second
+          game.fps = 0.25 * game.framesThisSecond + (1 - 0.25) * game.fps; // compute the new FPS
+    
+          game.lastFpsUpdate = game.stepTimeElapsed;
+          game.framesThisSecond = 0;
+        }
+        game.framesThisSecond++;
+
+        var numUpdateSteps = 0;
+        while (game.stepTimeElapsed >= game.timestep) {
+          game.update(game.timestep)
+          game.postUpdate(game.timestep)
+          game.stepTimeElapsed -= game.timestep;
+
+          if (++numUpdateSteps >= 240) {
+            game.panic(); // fix things
+            break; // bail out
+          }
+        }
+
+        game.preDraw(game.timestep)
+        game.draw(game.timestep);
 
         if (game.showStats) game.stats.end()
+
+        game.stepTimeThen = game.stepTimeNow 
 
         requestAnimationFrame(game.loop)
       }
     }
 
-    /**
-     *  
-     */
-  , update: function(){
-      wind.update()
-      worldCollsitionDetection.update()
-      entityCollisionDetection.update()
-      entityManager.update()
+  , panic: function() {
+        delta = 0; // discard the unsimulated time
+        // ... snap the player to the authoritative state
     }
 
     /**
      *  
      */
-  , postUpdate: function(){
-      entityManager.postUpdate()
+  , update: function(delta){
+      wind.update(delta)
+      worldCollsitionDetection.update(delta)
+      entityCollisionDetection.update(delta)
+      entityManager.update(delta)
+      ui.update(delta);
     }
 
     /**
      *  
      */
-  , preDraw:function(){
-      entityManager.preDraw()
+  , postUpdate: function(delta){
+      entityManager.postUpdate(delta)
+    }
+
+    /**
+     *  
+     */
+  , preDraw:function(delta){
+     
       theatre.clearStage()
+      entityManager.preDraw(delta)
       theatre.preShake()
     }
 
     /**
      *  
      */
-  , draw: function(){
-      entityManager.draw()
+  , draw: function(delta){
+      entityManager.draw(delta)
 
-      if (settings.theatreMovesWithPlayer) world.draw();
+      if (settings.theatreMovesWithPlayer) world.draw(delta);
 
       if (theatre.worldNeedsRedraw){
         theatre.clearWorld()
-        world.draw()
+        world.draw(delta)
         theatre.worldNeedsRedraw = false
       }
 
-      worldCollsitionDetection.draw()
-      wind.draw()
+      worldCollsitionDetection.draw(delta)
+      wind.draw(delta)
+      ui.draw(delta);
       theatre.postShake()
     }
 

@@ -30,8 +30,8 @@ function onError(e) {
 
 gulp.task('build-js', function(){
     return gulp.src(path.src.js)
-               .pipe(eslint())
-               .pipe(eslint.formatEach())
+               //.pipe(eslint())
+               //.pipe(eslint.formatEach())
                //.pipe(eslint.failAfterError())
                .on('error', onError)
                .pipe(gulp.dest(path.build.src));

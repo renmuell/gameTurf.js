@@ -11,7 +11,7 @@
 var QuadTree  = require('../../vendors/QuadTree')
 var theatre   = require('../core/theatre')
 var util      = require('../core/util')
-var QuadTree = QuadTree.QuadTree;
+QuadTree = QuadTree.QuadTree;
 
 var entityManager = {
 
@@ -31,7 +31,7 @@ var entityManager = {
       entityManager.enitites[nextIndex] = entity
     }
 
-  , update: function(){
+  , update: function(timeElapsed){
 
       entityManager.visableEntities = entityManager.tree.retrieveInBounds({
         x      : theatre.canvasBoxLeft
@@ -41,36 +41,37 @@ var entityManager = {
       })
 
       for (var y = entityManager.enitites.length - 1; y >= 0; y--) {
-        entityManager.enitites[y].update()
+        entityManager.enitites[y].update(timeElapsed)
       }
 
       entityManager.tree.clear();
       for (var i = entityManager.enitites.length - 1; i >= 0; i--) {
-        entityManager.tree.insert(entityManager.enitites[i].physics)
+        entityManager.enitites[i].physics.position.id = entityManager.enitites[i].physics.id
+        entityManager.tree.insert(entityManager.enitites[i].physics.position)
       }
     }
 
-  , postUpdate: function(){
+  , postUpdate: function(timeElapsed){
       for (var i = entityManager.enitites.length - 1; i >= 0; i--) {
         if (entityManager.enitites[i].postUpdate) {
-          entityManager.enitites[i].postUpdate()
+          entityManager.enitites[i].postUpdate(timeElapsed)
         }
       }
     }
   
-  , preDraw: function(){
+  , preDraw: function(timeElapsed){
       for (var i = entityManager.visableEntities.length - 1; i >= 0; i--) {
         var id = entityManager.visableEntities[i].id
         if (entityManager.enitites[id].preDraw) {
-          entityManager.enitites[id].preDraw()
+          entityManager.enitites[id].preDraw(timeElapsed)
         }
       }
     }
 
-  , draw: function(){
+  , draw: function(timeElapsed){
       for (var i = entityManager.visableEntities.length - 1; i >= 0; i--) {
         var id = entityManager.visableEntities[i].id
-        entityManager.enitites[id].draw()
+        entityManager.enitites[id].draw(timeElapsed)
       }
     }
 
@@ -90,8 +91,8 @@ var entityManager = {
         }
 
         var distanceVector = {
-          x: entity.physics.x - checkEntity.physics.x
-        , y: entity.physics.y - checkEntity.physics.y
+          x: entity.physics.position.x - checkEntity.physics.position.x
+        , y: entity.physics.position.y - checkEntity.physics.position.y
         }
 
         var checkDistance = util.vectorLength(distanceVector)

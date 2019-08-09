@@ -206,8 +206,8 @@ var tileHelper = {
 
       var tilePosition = {}
 
-      for (y = mintileArrayPositionY; y <= maxtileArrayPositionY; y++) {
-        for (x = mintileArrayPositionX; x <= maxtileArrayPositionX; x++) {
+      for (var y = mintileArrayPositionY; y <= maxtileArrayPositionY; y++) {
+        for (var x = mintileArrayPositionX; x <= maxtileArrayPositionX; x++) {
 
           var tiletype = mapWithTileTypes[y * worldWith + x]
 
@@ -225,7 +225,7 @@ var tileHelper = {
           , settings.tileSize +1
           , "#CCDDAF")
 
-          tileHelper.drawGrass(tilePosition, tileWidth, tileHeight)
+          //tileHelper.drawGrass(tilePosition, tileWidth, tileHeight)
         }
       }
     }

@@ -63,8 +63,8 @@ module.exports = function(settings){
               lastPositions.positions[lastPositions.lastEntityIndex] = { x: 0, y:0 }
             }
 
-            lastPositions.positions[lastPositions.lastEntityIndex].x = physics.x
-            lastPositions.positions[lastPositions.lastEntityIndex].y = physics.y
+            lastPositions.positions[lastPositions.lastEntityIndex].x = physics.position.x
+            lastPositions.positions[lastPositions.lastEntityIndex].y = physics.position.y
 
             lastPositions.lastEntityIndex = (lastPositions.lastEntityIndex + 1) % lastPositions.maxLength
             lastPositions.lastTimeSet     = Date.now()
@@ -90,21 +90,24 @@ module.exports = function(settings){
               continue
             }
 
-            tempPhysics.x          = lastPositions.positions[positionIndex].x
-            tempPhysics.y          = lastPositions.positions[positionIndex].y
+            tempPhysics.position = {
+              x: lastPositions.positions[positionIndex].x
+            , y: lastPositions.positions[positionIndex].y
+            };
+             
             tempPhysics.halfWidth  = physics.halfWidth
             tempPhysics.halfHeight = physics.halfHeight
             tempPhysics.width      = physics.width
             tempPhysics.height     = physics.height
-
+          
             theatre.drawSquareFromCenter(
               'stage',
               tempPhysics,
               "rgba(" + lastPositions.color.r + ", " +
                         lastPositions.color.g + ", " +
                         lastPositions.color.b + ", " +
-                        (i * (0.5/lastPositions.maxLength)) + 0.1 + ")")
-
+                        ((i * (0.5/lastPositions.maxLength)) + 0.1) + ")");
+           
             positionIndex = (positionIndex + 1) % lastPositions.maxLength
           }
         }

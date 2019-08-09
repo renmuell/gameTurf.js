@@ -31,12 +31,40 @@ var Stats                     = _dereq_('../../vendors/stats.min')
 var game = {
 
     /**
-     *  Gets current running state of the engine.
-     *  
-     *  @public
-     *  @type {boolean}
+     *  Time of last step
+     *  @type {date}
      */
-    isRunning              : false
+    stepTimeThen: 0
+
+    /**
+     *  Time of step
+     *  @type {date}
+     */
+  , stepTimeNow: 0
+
+    /**
+     *  Elapsed time since last step
+     *  @type {number}
+     */
+  , stepTimeElapsed: 0
+
+    /**
+     *  
+     *  @type {number}
+     */  
+  , timestep: 1000 / 60
+
+  , maxFPS: 60
+
+    /**
+     *  is engine running
+     *  @type {bool}
+     */
+  ,  isRunning              : false
+
+  ,  fps: 60
+  ,  framesThisSecond: 0
+  ,  lastFpsUpdate: 0
 
     /**
      *  
@@ -59,7 +87,7 @@ var game = {
 
       sound.init()
 
-      ui.init(function(){
+      ui.init(theatre, function(){
         game.run()
       })
 
@@ -82,6 +110,9 @@ var game = {
      */
   , run: function(){
       game.isRunning = true
+      game.stepTimeElapsed = 0
+      game.stepTimeNow = 0
+      game.stepTimeThen = 0
       ui.closeMenu()
       sound.playBackgroundSound()
       requestAnimationFrame(game.loop)
@@ -94,6 +125,9 @@ var game = {
       ui.openMenu()
       sound.pauseBackgroundSound()
       game.isRunning = false
+      game.stepTimeElapsed = 0
+      game.stepTimeNow = 0
+      game.stepTimeThen = 0
     }
 
     /**
@@ -102,61 +136,102 @@ var game = {
   , loop: function(){
       if (game.isRunning) {
 
-        if (game.showStats) game.stats.begin()
+        game.stepTimeNow = new Date().getTime()
 
-        game.update()
-        game.postUpdate()
-        game.preDraw()
-        game.draw()
+
+        if (game.stepTimeThen !== 0) {
+          game.stepTimeElapsed 
+            = game.stepTimeNow - game.stepTimeThen
+        }
+
+        if (game.showStats) game.stats.begin();
+
+        if (game.stepTimeElapsed  < game.lastFrameTimeMs + (1000 / game.maxFPS)) {
+            requestAnimationFrame(game.loop);
+            return;
+        }
+
+        if (game.stepTimeElapsed  > game.lastFpsUpdate + 1000) { // update every second
+          game.fps = 0.25 * game.framesThisSecond + (1 - 0.25) * game.fps; // compute the new FPS
+    
+          game.lastFpsUpdate = game.stepTimeElapsed;
+          game.framesThisSecond = 0;
+        }
+        game.framesThisSecond++;
+
+        var numUpdateSteps = 0;
+        while (game.stepTimeElapsed >= game.timestep) {
+          game.update(game.timestep)
+          game.postUpdate(game.timestep)
+          game.stepTimeElapsed -= game.timestep;
+
+          if (++numUpdateSteps >= 240) {
+            game.panic(); // fix things
+            break; // bail out
+          }
+        }
+
+        game.preDraw(game.timestep)
+        game.draw(game.timestep);
 
         if (game.showStats) game.stats.end()
+
+        game.stepTimeThen = game.stepTimeNow 
 
         requestAnimationFrame(game.loop)
       }
     }
 
-    /**
-     *  
-     */
-  , update: function(){
-      wind.update()
-      worldCollsitionDetection.update()
-      entityCollisionDetection.update()
-      entityManager.update()
+  , panic: function() {
+        delta = 0; // discard the unsimulated time
+        // ... snap the player to the authoritative state
     }
 
     /**
      *  
      */
-  , postUpdate: function(){
-      entityManager.postUpdate()
+  , update: function(delta){
+      wind.update(delta)
+      worldCollsitionDetection.update(delta)
+      entityCollisionDetection.update(delta)
+      entityManager.update(delta)
+      ui.update(delta);
     }
 
     /**
      *  
      */
-  , preDraw:function(){
-      entityManager.preDraw()
+  , postUpdate: function(delta){
+      entityManager.postUpdate(delta)
+    }
+
+    /**
+     *  
+     */
+  , preDraw:function(delta){
+     
       theatre.clearStage()
+      entityManager.preDraw(delta)
       theatre.preShake()
     }
 
     /**
      *  
      */
-  , draw: function(){
-      entityManager.draw()
+  , draw: function(delta){
+      entityManager.draw(delta)
 
-      if (settings.theatreMovesWithPlayer) world.draw();
+      if (settings.theatreMovesWithPlayer) world.draw(delta);
 
       if (theatre.worldNeedsRedraw){
         theatre.clearWorld()
-        world.draw()
+        world.draw(delta)
         theatre.worldNeedsRedraw = false
       }
 
-      worldCollsitionDetection.draw()
-      wind.draw()
+      worldCollsitionDetection.draw(delta)
+      wind.draw(delta)
+      ui.draw(delta);
       theatre.postShake()
     }
 
@@ -185,7 +260,7 @@ module.exports = game
 
 }());
 
-},{"../../vendors/stats.min":23,"./../detectors/entityCollisionDetection":9,"./../detectors/worldCollsitionDetection":10,"./../managers/entityManager":16,"./../systems/wind":18,"./../systems/world":19,"./input":2,"./settings":4,"./sound":5,"./theatre":6,"./ui":7}],2:[function(_dereq_,module,exports){
+},{"../../vendors/stats.min":25,"./../detectors/entityCollisionDetection":9,"./../detectors/worldCollsitionDetection":10,"./../managers/entityManager":18,"./../systems/wind":20,"./../systems/world":21,"./input":2,"./settings":4,"./sound":5,"./theatre":6,"./ui":7}],2:[function(_dereq_,module,exports){
 /******************************************************************************
  * input.js
  *
@@ -534,9 +609,9 @@ var sound = {
          && settings.backgroundSong.src) {
          
           sound.backgroundSong = new Howl({
-              src   : [setting.backgroundSong.src]
+              src   : [settings.backgroundSong.src]
             , loop  : true
-            , volume: setting.backgroundSong.volume
+            , volume: settings.backgroundSong.volume
           })
         }
       }
@@ -614,7 +689,7 @@ module.exports = sound
 
 }());
 
-},{"../../vendors/howler.min":22,"./settings":4}],6:[function(_dereq_,module,exports){
+},{"../../vendors/howler.min":24,"./settings":4}],6:[function(_dereq_,module,exports){
 /******************************************************************************
  * theatre.js
  *
@@ -653,7 +728,7 @@ var theatre = {
   , allowScreenShake     : false
   , scrrenShakeMagnitude : 5
 
-  , useResolutionDevider : false
+  , useResolutionDevider : true
   , resolutionDevider    : 2
   , movesWithPlayer      : false
 
@@ -688,7 +763,6 @@ var theatre = {
       theatre.waterCanvas.style.width  = theatre.canvasWidth  + "px"
       theatre.waterCanvas.style.height = theatre.canvasHeight + "px"
 
-      theatre.waterCanvas
       theatre.resize()
       
       window.addEventListener('resize', theatre.resize, false)
@@ -855,22 +929,22 @@ var theatre = {
   , playerUpdate: function(physics){
       if (theatre.movesWithPlayer){
 
-        var posX = (theatre.stageCanvas.width  / 2) - physics.x
-        var posY = (theatre.stageCanvas.height / 2) - physics.y
+        var posX = (theatre.stageCanvas.width  / 2) - physics.position.x
+        var posY = (theatre.stageCanvas.height / 2) - physics.position.y
 
         theatre.stage.setTransform(1, 0, 0, 1, posX, posY)
         theatre.backdrop.setTransform(1, 0, 0, 1, posX, posY)
 
-        theatre.canvasBoxLeft   = physics.x - (theatre.stageCanvas.width  / 2)
-        theatre.canvasBoxRight  = physics.x + (theatre.stageCanvas.width  / 2)
-        theatre.canvasBoxTop    = physics.y - (theatre.stageCanvas.height / 2)
-        theatre.canvasBoxBottom = physics.y + (theatre.stageCanvas.height / 2)
+        theatre.canvasBoxLeft   = physics.position.x - (theatre.stageCanvas.width  / 2)
+        theatre.canvasBoxRight  = physics.position.x + (theatre.stageCanvas.width  / 2)
+        theatre.canvasBoxTop    = physics.position.y - (theatre.stageCanvas.height / 2)
+        theatre.canvasBoxBottom = physics.position.y + (theatre.stageCanvas.height / 2)
 
         theatre.worldNeedsRedraw = true
       
       } else {
 
-        if (physics.x < theatre.canvasBoxLeft) {
+        if (physics.position.x < theatre.canvasBoxLeft) {
           
           theatre.currentTranslateX  += theatre.canvasWidth
           theatre.stage.setTransform(1,0,0,1, theatre.currentTranslateX, theatre.currentTranslateY)
@@ -880,7 +954,7 @@ var theatre = {
           theatre.worldNeedsRedraw = true
           // translate left
         
-        } else if (physics.x > theatre.canvasBoxRight){
+        } else if (physics.position.x > theatre.canvasBoxRight){
           
           // translate right
           theatre.currentTranslateX  -= theatre.canvasWidth
@@ -890,7 +964,7 @@ var theatre = {
           theatre.canvasBoxRight  += theatre.canvasWidth
           theatre.worldNeedsRedraw = true
 
-        } else if (physics.y < theatre.canvasBoxTop){
+        } else if (physics.position.y < theatre.canvasBoxTop){
           
           // translate top
           theatre.currentTranslateY  += theatre.canvasHeight
@@ -900,7 +974,7 @@ var theatre = {
           theatre.canvasBoxBottom -= theatre.canvasHeight
           theatre.worldNeedsRedraw = true
 
-        } else if (physics.y > theatre.canvasBoxBottom){
+        } else if (physics.position.y > theatre.canvasBoxBottom){
           
           // translate bottom
           theatre.currentTranslateY  -= theatre.canvasHeight
@@ -944,26 +1018,26 @@ var theatre = {
   , drawTrianlgeFromCenter: function(canvas, physics, color){
 
       if (theatre.isOutsideOfCanvas(
-            physics.x + physics.halfWidth
-          , physics.x - physics.halfWidth
-          , physics.y - physics.halfHeight
-          , physics.y + physics.halfHeight)){
+            physics.position.x + physics.halfWidth
+          , physics.position.x - physics.halfWidth
+          , physics.position.y - physics.halfHeight
+          , physics.position.y + physics.halfHeight)){
         return;
       }
 
       theatre[canvas].beginPath()
       theatre[canvas].moveTo(
-        Math.floor(physics.x)
-      , Math.floor(physics.y - physics.halfHeight))
+        Math.floor(physics.position.x)
+      , Math.floor(physics.position.y - physics.halfHeight))
       theatre[canvas].lineTo(
-        Math.floor(physics.x - physics.halfWidth)
-      , Math.floor(physics.y + physics.halfHeight))
+        Math.floor(physics.position.x - physics.halfWidth)
+      , Math.floor(physics.position.y + physics.halfHeight))
       theatre[canvas].lineTo(
-        Math.floor(physics.x + physics.halfWidth)
-      , Math.floor(physics.y + physics.halfHeight))
+        Math.floor(physics.position.x + physics.halfWidth)
+      , Math.floor(physics.position.y + physics.halfHeight))
       theatre[canvas].lineTo(
-        Math.floor(physics.x)
-      , Math.floor(physics.y - physics.halfHeight))
+        Math.floor(physics.position.x)
+      , Math.floor(physics.position.y - physics.halfHeight))
 
       theatre[canvas].fillStyle = color
       theatre[canvas].fill()
@@ -975,27 +1049,27 @@ var theatre = {
   , drawTrianlgeFromCenterUpsideDown: function(canvas, physics, color){
 
       if (theatre.isOutsideOfCanvas(
-            physics.x + physics.halfWidth
-          , physics.x - physics.halfWidth
-          , physics.y - physics.halfHeight
-          , physics.y + physics.halfHeight)){
+            physics.position.x + physics.halfWidth
+          , physics.position.x - physics.halfWidth
+          , physics.position.y - physics.halfHeight
+          , physics.position.y + physics.halfHeight)){
         return;
       }
 
       theatre[canvas].beginPath()
 
       theatre[canvas].moveTo(
-        Math.floor(physics.x)
-      , Math.floor(physics.y + physics.halfHeight))
+        Math.floor(physics.position.x)
+      , Math.floor(physics.position.y + physics.halfHeight))
       theatre[canvas].lineTo(
-        Math.floor(physics.x - physics.halfWidth)
-      , Math.floor(physics.y - physics.halfHeight))
+        Math.floor(physics.position.x - physics.halfWidth)
+      , Math.floor(physics.position.y - physics.halfHeight))
       theatre[canvas].lineTo(
-        Math.floor(physics.x + physics.halfWidth)
-      , Math.floor(physics.y - physics.halfHeight))
+        Math.floor(physics.position.x + physics.halfWidth)
+      , Math.floor(physics.position.y - physics.halfHeight))
       theatre[canvas].lineTo(
-        Math.floor(physics.x)
-      , Math.floor(physics.y + physics.halfHeight))
+        Math.floor(physics.position.x)
+      , Math.floor(physics.position.y + physics.halfHeight))
 
       theatre[canvas].fillStyle = color
       theatre[canvas].fill()
@@ -1007,17 +1081,17 @@ var theatre = {
   , drawSquareFromCenter: function(canvas, physics, color){
 
       if (theatre.isOutsideOfCanvas(
-            physics.x + physics.halfWidth
-          , physics.x - physics.halfWidth
-          , physics.y - physics.halfHeight
-          , physics.y + physics.halfHeight)){
+            physics.position.x + physics.halfWidth
+          , physics.position.x - physics.halfWidth
+          , physics.position.y - physics.halfHeight
+          , physics.position.y + physics.halfHeight)){
         return;
       }
 
       theatre[canvas].fillStyle = color
       theatre[canvas].fillRect(
-        Math.floor(physics.x - physics.halfWidth)
-      , Math.floor(physics.y - physics.halfHeight)
+        Math.floor(physics.position.x - physics.halfWidth)
+      , Math.floor(physics.position.y - physics.halfHeight)
       , physics.width
       , physics.height)
     }
@@ -1049,17 +1123,17 @@ var theatre = {
   , drawCircle: function(canvas, physics, color){
 
       if (theatre.isOutsideOfCanvas(
-            physics.x + physics.halfWidth
-          , physics.x - physics.halfWidth
-          , physics.y - physics.halfHeight
-          , physics.y + physics.halfHeight)){
+            physics.position.x + physics.halfWidth
+          , physics.position.x - physics.halfWidth
+          , physics.position.y - physics.halfHeight
+          , physics.position.y + physics.halfHeight)){
         return;
       }
 
       theatre[canvas].beginPath()
       theatre[canvas].arc(
-        Math.floor(physics.x)
-      , Math.floor(physics.y)
+        Math.floor(physics.position.x)
+      , Math.floor(physics.position.y)
       , physics.halfWidth
       , 0
       , 2 * Math.PI
@@ -1093,11 +1167,11 @@ var theatre = {
         theatre[canvas].strokeStyle = color
         theatre[canvas].lineWidth   = 1
         theatre[canvas].moveTo(
-          Math.floor(physics.x)
-        , Math.floor(physics.y))
+          Math.floor(physics.position.x)
+        , Math.floor(physics.position.y))
         theatre[canvas].lineTo(
-          Math.floor(physics.x + vector.x)
-        , Math.floor(physics.y + vector.y))
+          Math.floor(physics.position.x + vector.x)
+        , Math.floor(physics.position.y + vector.y))
         theatre[canvas].stroke()
     }
   
@@ -1134,8 +1208,8 @@ var theatre = {
 
         if (physics){
           theatre[canvas].lineTo(
-            Math.floor(physics.x)
-          , Math.floor(physics.y))
+            Math.floor(physics.position.x)
+          , Math.floor(physics.position.y))
         }
 
         theatre[canvas].stroke()
@@ -1216,7 +1290,7 @@ module.exports = theatre
 
 /*global require, module */
 
-var dat       = _dereq_('../../vendors/dat.gui.min')
+var dat       = _dereq_('./../../vendors/dat.gui.min')
 var settings  = _dereq_('./settings')
 
 /**
@@ -1229,21 +1303,62 @@ var ui = {
    */ 
   menu  : document.getElementById("Menu")
 
+, theatre: undefined
+
   /**
    *  
    */ 
 , continueBtn  : document.getElementById("continue")
+
+, bubbleList: []
 
   /**
    *  
    */ 
 , datGui: settings.datGuiIsOn ? new dat.GUI() : undefined    
 
-, init: function(continueGameCallback){
+, init: function(theatre, continueGameCallback){
+
+    ui.theatre = theatre
+
+    ui.output              = document.getElementById('output');
+    ui.output.style.width  = ui.theatre.canvasWidth  + "px";
+    ui.output.style.height = ui.theatre.canvasHeight + "px";
+    ui.output.style.position = 'absolute';
+    ui.output.style.left = 0;
+    ui.output.style.top = 0;
+    ui.output.style.pointerEvents = "none";
+    ui.output.style.zIndex = 1000;
+
     ui.continueBtn.addEventListener('click', function(){
       continueGameCallback();
     })
   }
+
+, update: function(timeElapsed) {
+
+
+
+  ui.bubbleList.forEach(function(bubble) {
+
+    bubble.time -= timeElapsed;
+
+    if (bubble.time <= 0) {
+      bubble.element.remove();
+      bubble.death = true;
+    } else {
+      ui.setBubblePosition(bubble.element, bubble.physics);
+    }
+  })
+
+  ui.bubbleList = ui.bubbleList.filter(function (bubble) {
+    return !bubble.death;
+  });
+}
+
+, draw: function(timeElapsed) {
+  
+}
 
   /**
    *  
@@ -1258,13 +1373,47 @@ var ui = {
 , closeMenu: function(){
     ui.menu.className = "hide"
   }
+
+, setBubblePosition: function (element, physics) {
+  if (ui.theatre.useResolutionDevider) {
+    element.style.top = (((ui.theatre.canvasBoxTop*ui.theatre.resolutionDevider)*-1) + (physics.position.y*ui.theatre.resolutionDevider) -(80)) + "px"
+    element.style.left = ((((ui.theatre.canvasBoxLeft*ui.theatre.resolutionDevider)*-1) + (physics.position.x*ui.theatre.resolutionDevider)) -(100)) + "px"
+  } else {
+    element.style.top = ((ui.theatre.canvasBoxTop*-1) + (physics.position.y) -80) + "px"
+    element.style.left = (((ui.theatre.canvasBoxLeft*-1) + physics.position.x) -100) + "px"
+  }
+
+}
+, showBubble: function (physics, text, time) {
+
+    var element = document.createElement("div");
+    element.innerHTML = text;
+    element.style.position = "absolute"
+    element.classList = "bubble";
+    element.style.height = "60px";
+    element.style.lineHeight = "60px";
+    element.style.width = "200px";
+    element.style.backgroundColor = "rgba(255,255,255,.3)"
+    element.style.textAlign = "center";
+    element.style.borderRadius = "10px"
+    ui.setBubblePosition(element, physics)
+    ui.output.appendChild(element)
+
+    ui.bubbleList.push({
+      physics:physics
+    , death: false
+    , text: text
+    , time: time
+    , element: element
+    })
+  }
 }
 
 module.exports = ui
 
 }());
 
-},{"../../vendors/dat.gui.min":21,"./settings":4}],8:[function(_dereq_,module,exports){
+},{"./../../vendors/dat.gui.min":23,"./settings":4}],8:[function(_dereq_,module,exports){
 /******************************************************************************
  * util.js
  *
@@ -1374,7 +1523,7 @@ var entityCollisionDetection = {
   /**
    *  
    */ 
-, update: function(){
+, update: function(timeElapsed){
 
     for (var i = entityManager.visableEntities.length - 1; i >= 0; i--) {
 
@@ -1467,7 +1616,7 @@ module.exports = entityCollisionDetection
 
 }());
 
-},{"./../managers/entityManager":16}],10:[function(_dereq_,module,exports){
+},{"./../managers/entityManager":18}],10:[function(_dereq_,module,exports){
 /******************************************************************************
  * worldCollsitionDetection.js
  *
@@ -1482,6 +1631,7 @@ var tilesHelper = _dereq_('./../helpers/tilesHelper')
 var theatre     = _dereq_('./../core/theatre')
 var sound       = _dereq_('./../core/sound')
 var settings    = _dereq_('./../core/settings')
+var physicsHelper = _dereq_('./../helpers/physicsHelper')
 
 /**
  *  
@@ -1502,12 +1652,13 @@ var worldCollsitionDetection = {
      *  
      */ 
   , collsitionDetection: function(
-      mapWithTileTypes
+      timeElapsed
+    , mapWithTileTypes
     , worldWith
     , wolrdHeight
-    , hitbox
-    , velocity
-    , isBounce){
+    , physics){
+
+      var hitbox = physics.getHitBox();
 
       tilesHelper.calculateNeahrestTileWalls(
         mapWithTileTypes
@@ -1521,10 +1672,10 @@ var worldCollsitionDetection = {
         if (tilesHelper.neahrestTileWalls[tileNr]) {
           for (var tileWallNr = tilesHelper.neahrestTileWalls[tileNr].length - 1; tileWallNr >= 0; tileWallNr--) {
             colide = worldCollsitionDetection.calculateWallCollsitionDenfung(
-                      tilesHelper.neahrestTileWalls[tileNr][tileWallNr]
-                      , hitbox
-                      , velocity
-                      , isBounce) || colide
+                timeElapsed
+              , tilesHelper.neahrestTileWalls[tileNr][tileWallNr]
+              , physics
+              , hitbox) || colide
           }
         }
       }
@@ -1536,22 +1687,29 @@ var worldCollsitionDetection = {
      *  
      */ 
   , calculateWallCollsitionDenfung: function(
-      wall
-    , hitbox
-    , velocity
-    , isBounce) {
+      timeElapsed
+    , wall
+    , physics
+    , hitbox) {
 
       for (var i = hitbox.points.length - 1; i >= 0; i--) {
+
+        var hitboxPoint = hitbox.points[i];
+        
+        var hitboxPointFuturePosition = physics.calculateFuturePositionOf({
+            x: hitboxPoint.x
+          , y: hitboxPoint.y
+        }, timeElapsed);
 
         if(worldCollsitionDetection.checkLineIntersectionFast(
               wall[0].x
             , wall[0].y
             , wall[1].x
             , wall[1].y
-            , hitbox.points[i].x
-            , hitbox.points[i].y
-            , hitbox.points[i].x + velocity.x
-            , hitbox.points[i].y + velocity.y)){
+            , hitboxPoint.x
+            , hitboxPoint.y
+            , hitboxPointFuturePosition.x
+            , hitboxPointFuturePosition.y)){
 
           if (settings.debugWorldCollisions) {
             worldCollsitionDetection.debugCollisionLine(
@@ -1575,17 +1733,17 @@ var worldCollsitionDetection = {
             wallIsDown  = wallIsDown  && (wall[0].y > hitbox.points[y].y && wall[1].y > hitbox.points[y].y)
           }
 
-          if (isBounce) {
+          if (physics.isBounce) {
 
-            if (wallIsRight && velocity.x > 0) velocity.x = -velocity.x
-            if (wallIsLeft  && velocity.x < 0) velocity.x = -velocity.x
-            if (wallIsDown  && velocity.y > 0) velocity.y = -velocity.y
-            if (wallIsUp    && velocity.y < 0) velocity.y = -velocity.y
+            if (wallIsRight && physics.velocity.x > 0) physics.velocity.x = -physics.velocity.x
+            if (wallIsLeft  && physics.velocity.x < 0) physics.velocity.x = -physics.velocity.x
+            if (wallIsDown  && physics.velocity.y > 0) physics.velocity.y = -physics.velocity.y
+            if (wallIsUp    && physics.velocity.y < 0) physics.velocity.y = -physics.velocity.y
 
           } else {
 
-            if (wallIsRight || wallIsLeft) velocity.x = 0
-            if (wallIsDown  || wallIsUp)   velocity.y = 0
+            if (wallIsRight || wallIsLeft) physics.velocity.x = 0
+            if (wallIsDown  || wallIsUp)   physics.velocity.y = 0
 
           }
 
@@ -1623,7 +1781,7 @@ var worldCollsitionDetection = {
     /**
      *  
      */ 
-  , update: function(){
+  , update: function(timeElapsed){
       if(settings.debugWorldCollisions) {
         worldCollsitionDetection.collsitions = []
         worldCollsitionDetection.checkLines  = []
@@ -1633,7 +1791,7 @@ var worldCollsitionDetection = {
     /**
      *  
      */ 
-  , draw: function(){
+  , draw: function(timeElapsed){
       if(settings.debugWorldCollisions) {
         theatre.drawMultipleLines('stage', worldCollsitionDetection.checkLines, "#F24962")
         theatre.drawMultipleLines('stage', worldCollsitionDetection.collsitions, "blue")
@@ -1677,7 +1835,7 @@ module.exports =  worldCollsitionDetection
 
 }());
 
-},{"./../core/settings":4,"./../core/sound":5,"./../core/theatre":6,"./../helpers/tilesHelper":15}],11:[function(_dereq_,module,exports){
+},{"./../core/settings":4,"./../core/sound":5,"./../core/theatre":6,"./../helpers/physicsHelper":16,"./../helpers/tilesHelper":17}],11:[function(_dereq_,module,exports){
 /******************************************************************************
  * face.js
  *
@@ -1803,8 +1961,8 @@ module.exports = function(config){
     , drawNoramlFace: function(physics) {
 
         // left eye
-        face.leftEyePosition.x = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y = physics.y - (physics.height * 0.1)
+        face.leftEyePosition.x = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y = physics.position.y - (physics.height * 0.1)
         theatre.drawLine(
           'stage'
         , face.leftEyePosition
@@ -1812,8 +1970,8 @@ module.exports = function(config){
         , face.color)
 
         // right eye
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.1)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.1)
         theatre.drawLine(
           'stage'
         , face.rightEyePosition
@@ -1821,8 +1979,8 @@ module.exports = function(config){
         , face.color)
 
         // close mouth
-        face.mouthPosition.x = physics.x - (physics.width  * 0.2)
-        face.mouthPosition.y = physics.y + (physics.height * 0.3)
+        face.mouthPosition.x = physics.position.x - (physics.width  * 0.2)
+        face.mouthPosition.y = physics.position.y + (physics.height * 0.3)
         theatre.drawLine(
           'stage'
         , face.mouthPosition
@@ -1832,8 +1990,8 @@ module.exports = function(config){
 
     , drawNoramlFaceOpenEyes: function(physics) {
         // linkes auge
-        face.leftEyePosition.x = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y = physics.y - (physics.height * 0.2)
+        face.leftEyePosition.x = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y = physics.position.y - (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.leftEyePosition
@@ -1841,8 +1999,8 @@ module.exports = function(config){
         , face.color)
 
         // rechtes auge
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.2)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.rightEyePosition
@@ -1850,8 +2008,8 @@ module.exports = function(config){
         , face.color)
 
         // closed mund
-        face.mouthPosition.x = physics.x - (physics.width  * 0.2)
-        face.mouthPosition.y = physics.y + (physics.height * 0.3)
+        face.mouthPosition.x = physics.position.x - (physics.width  * 0.2)
+        face.mouthPosition.y = physics.position.y + (physics.height * 0.3)
         theatre.drawLine(
           'stage'
         , face.mouthPosition
@@ -1861,8 +2019,8 @@ module.exports = function(config){
 
     , drawSurpiseFace: function(physics){
         // linkes auge
-        face.leftEyePosition.x = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y = physics.y - (physics.height * 0.2)
+        face.leftEyePosition.x = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y = physics.position.y - (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.leftEyePosition
@@ -1870,8 +2028,8 @@ module.exports = function(config){
         , face.color)
 
         // rechtes auge
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.2)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.rightEyePosition
@@ -1879,8 +2037,8 @@ module.exports = function(config){
         , face.color)
 
         // mund
-        face.mouthPosition.x = physics.x - (physics.width  * 0.1)
-        face.mouthPosition.y = physics.y + (physics.height * 0.2)
+        face.mouthPosition.x = physics.position.x - (physics.width  * 0.1)
+        face.mouthPosition.y = physics.position.y + (physics.height * 0.2)
         theatre.drawSquareFromLeftTopCorner(
           'stage'
         , face.mouthPosition
@@ -1890,44 +2048,44 @@ module.exports = function(config){
 
     , drawFaceLookLeft: function(physics){
 
-        face.leftEyePosition.x  = physics.x - (physics.width  * 0.4)
-        face.leftEyePosition.y  = physics.y - (physics.height * 0.2)
+        face.leftEyePosition.x  = physics.position.x - (physics.width  * 0.4)
+        face.leftEyePosition.y  = physics.position.y - (physics.height * 0.2)
 
-        face.rightEyePosition.x = physics.x
-        face.rightEyePosition.y = physics.y - (physics.height * 0.2)
+        face.rightEyePosition.x = physics.position.x
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.2)
 
         face.drawFaceLook(physics)
       }
 
     , drawFaceLookRight: function(physics){
 
-        face.leftEyePosition.x  = physics.x - (physics.width  * 0.2)
-        face.leftEyePosition.y  = physics.y - (physics.height * 0.2)
+        face.leftEyePosition.x  = physics.position.x - (physics.width  * 0.2)
+        face.leftEyePosition.y  = physics.position.y - (physics.height * 0.2)
 
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.2)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.2)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.2)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.2)
 
         face.drawFaceLook(physics)
       }
 
     , drawFaceLookTop: function(physics){
 
-        face.leftEyePosition.x  = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y  = physics.y - (physics.height * 0.25)
+        face.leftEyePosition.x  = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y  = physics.position.y - (physics.height * 0.25)
 
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.25)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.25)
 
         face.drawFaceLook(physics)
       }
 
     , drawFaceLookDown: function(physics){
 
-        face.leftEyePosition.x  = physics.x - (physics.width  * 0.3)
-        face.leftEyePosition.y  = physics.y - (physics.height * 0.15)
+        face.leftEyePosition.x  = physics.position.x - (physics.width  * 0.3)
+        face.leftEyePosition.y  = physics.position.y - (physics.height * 0.15)
 
-        face.rightEyePosition.x = physics.x + (physics.width  * 0.1)
-        face.rightEyePosition.y = physics.y - (physics.height * 0.15)
+        face.rightEyePosition.x = physics.position.x + (physics.width  * 0.1)
+        face.rightEyePosition.y = physics.position.y - (physics.height * 0.15)
 
         face.drawFaceLook(physics)
       }
@@ -1959,8 +2117,8 @@ module.exports = function(config){
         , face.color)
 
         // close mouth
-        face.mouthPosition.x = physics.x - (physics.width  * 0.2) + offsetX
-        face.mouthPosition.y = physics.y + (physics.height * 0.3) + offsetY
+        face.mouthPosition.x = physics.position.x - (physics.width  * 0.2) + offsetX
+        face.mouthPosition.y = physics.position.y + (physics.height * 0.3) + offsetY
 
         theatre.drawLine(
           'stage'
@@ -1976,6 +2134,36 @@ module.exports = function(config){
 }());
 
 },{"./../core/theatre":6,"./../core/util":8}],12:[function(_dereq_,module,exports){
+/**
+ * interaction.js
+ *
+ */
+
+(function() {
+
+    /*global require, module */
+
+    module.exports = function(settings){
+    
+      settings = settings || {}
+    
+      var interaction = {
+        
+        onInteraction: settings.onInteraction || function (entity) {
+
+        },
+        
+        drawHighlightBox: settings.drawHighlightBox || function () {
+
+        }
+      }
+    
+      return interaction
+    }
+    
+    }());
+    
+},{}],13:[function(_dereq_,module,exports){
 /******************************************************************************
  * lastPosition.js
  *
@@ -2041,8 +2229,8 @@ module.exports = function(settings){
               lastPositions.positions[lastPositions.lastEntityIndex] = { x: 0, y:0 }
             }
 
-            lastPositions.positions[lastPositions.lastEntityIndex].x = physics.x
-            lastPositions.positions[lastPositions.lastEntityIndex].y = physics.y
+            lastPositions.positions[lastPositions.lastEntityIndex].x = physics.position.x
+            lastPositions.positions[lastPositions.lastEntityIndex].y = physics.position.y
 
             lastPositions.lastEntityIndex = (lastPositions.lastEntityIndex + 1) % lastPositions.maxLength
             lastPositions.lastTimeSet     = Date.now()
@@ -2068,21 +2256,24 @@ module.exports = function(settings){
               continue
             }
 
-            tempPhysics.x          = lastPositions.positions[positionIndex].x
-            tempPhysics.y          = lastPositions.positions[positionIndex].y
+            tempPhysics.position = {
+              x: lastPositions.positions[positionIndex].x
+            , y: lastPositions.positions[positionIndex].y
+            };
+             
             tempPhysics.halfWidth  = physics.halfWidth
             tempPhysics.halfHeight = physics.halfHeight
             tempPhysics.width      = physics.width
             tempPhysics.height     = physics.height
-
+          
             theatre.drawSquareFromCenter(
               'stage',
               tempPhysics,
               "rgba(" + lastPositions.color.r + ", " +
                         lastPositions.color.g + ", " +
                         lastPositions.color.b + ", " +
-                        (i * (0.5/lastPositions.maxLength)) + 0.1 + ")")
-
+                        ((i * (0.5/lastPositions.maxLength)) + 0.1) + ")");
+           
             positionIndex = (positionIndex + 1) % lastPositions.maxLength
           }
         }
@@ -2106,7 +2297,7 @@ module.exports = function(settings){
 
 }());
 
-},{"./../core/theatre":6}],13:[function(_dereq_,module,exports){
+},{"./../core/theatre":6}],14:[function(_dereq_,module,exports){
 /******************************************************************************
  * physics.js
  *
@@ -2118,10 +2309,12 @@ module.exports = function(settings){
 /*global require, module */
 
 var util      = _dereq_('./../core/util')
+var ui      = _dereq_('./../core/ui')
 var world     = _dereq_('./../systems/world')
 var settings  = _dereq_('./../core/settings')
 var theatre   = _dereq_('./../core/theatre')
 var entityManager = _dereq_('./../managers/entityManager')
+var physicsHelper = _dereq_('./../helpers/physicsHelper')
 
 module.exports = function(config){
 
@@ -2129,8 +2322,7 @@ module.exports = function(config){
 
   var physics = {
 
-      x                 : config.x                 || 0
-    , y                 : config.y                 || 0
+      position          : config.position          || { x:0, y:0 }
     , velocity          : config.velocity          || { x:0, y:0 }
     , speed             : config.speed             || 2
     , runSpeed          : config.runSpeed          || 4
@@ -2202,7 +2394,7 @@ module.exports = function(config){
         }
       }
 
-    , update: function(input){
+    , update: function(timeElapsed, input){
         physics.isMoving    = false
         physics.collsition  = false
 
@@ -2213,7 +2405,7 @@ module.exports = function(config){
 
           physics.isMoving = true
 
-          physics.collsition = physics.collsitionDetection()
+          physics.collsition = physics.collsitionDetection(timeElapsed)
 
           if (physics.objectCollision) {
 
@@ -2230,10 +2422,10 @@ module.exports = function(config){
               var hitBox = physics.getHitBox()
               var entityHitBox  = entity.physics.getHitBox()
         
-              var objectIsLeft  = physics.x > entity.physics.x && hitBox.Left   < entityHitBox.Right
-              , objectIsRight   = physics.x < entity.physics.x && hitBox.Right  > entityHitBox.Left
-              , objectIsUp      = physics.y > entity.physics.y && hitBox.Top    < entityHitBox.Bottom
-              , objectIsDown    = physics.y < entity.physics.y && hitBox.Bottom > entityHitBox.Top
+              var objectIsLeft  = physics.position.x > entity.physics.position.x && hitBox.Left   < entityHitBox.Right
+              , objectIsRight   = physics.position.x < entity.physics.position.x && hitBox.Right  > entityHitBox.Left
+              , objectIsUp      = physics.position.y > entity.physics.position.y && hitBox.Top    < entityHitBox.Bottom
+              , objectIsDown    = physics.position.y < entity.physics.position.y && hitBox.Bottom > entityHitBox.Top
 
               if (objectIsRight && physics.velocity.x > 0) physics.velocity.x = 0
               if (objectIsLeft  && physics.velocity.x < 0) physics.velocity.x = 0
@@ -2242,9 +2434,14 @@ module.exports = function(config){
             }
           }
 
-          physics.x += physics.velocity.x
-          physics.y += physics.velocity.y
+          physics.position = physics.calculateFuturePositionOf(physics.position, timeElapsed)
         }
+      }
+
+    , calculateFuturePositionOf: function (position, timeElapsed) {
+        position.x += physicsHelper.calculateVelocityForTime(timeElapsed, physics.velocity.x)
+        position.y += physicsHelper.calculateVelocityForTime(timeElapsed, physics.velocity.y)
+        return position
       }
 
     , draw: function(){
@@ -2268,13 +2465,13 @@ module.exports = function(config){
       }
 
     , getHitBox: function() {
-        physics.hitBox.centerPosition.x = physics.x
-        physics.hitBox.centerPosition.y = physics.y
+        physics.hitBox.centerPosition.x = physics.position.x
+        physics.hitBox.centerPosition.y = physics.position.y
 
-        physics.hitBox.Left   = physics.x - physics.halfWidth
-        physics.hitBox.Right  = physics.x + physics.halfWidth
-        physics.hitBox.Bottom = physics.y + physics.halfHeight
-        physics.hitBox.Top    = physics.y - physics.halfHeight
+        physics.hitBox.Left   = physics.position.x - physics.halfWidth
+        physics.hitBox.Right  = physics.position.x + physics.halfWidth
+        physics.hitBox.Bottom = physics.position.y + physics.halfHeight
+        physics.hitBox.Top    = physics.position.y - physics.halfHeight
 
         physics.hitBox.points[0].x = physics.hitBox.Left
         physics.hitBox.points[0].y = physics.hitBox.Top
@@ -2291,12 +2488,11 @@ module.exports = function(config){
         return physics.hitBox
       }
 
-    , collsitionDetection: function(){
+    , collsitionDetection: function(timeElapsed){
         if (physics.canWorldColide) {
           return world.collsitionDetection(
-            physics.getHitBox()
-          , physics.velocity
-          , physics.isBounce)
+            timeElapsed
+          , physics)
         }
         return false
       }
@@ -2346,12 +2542,14 @@ module.exports = function(config){
 
 }());
 
-},{"./../core/settings":4,"./../core/theatre":6,"./../core/util":8,"./../managers/entityManager":16,"./../systems/world":19}],14:[function(_dereq_,module,exports){
+},{"./../core/settings":4,"./../core/theatre":6,"./../core/ui":7,"./../core/util":8,"./../helpers/physicsHelper":16,"./../managers/entityManager":18,"./../systems/world":21}],15:[function(_dereq_,module,exports){
 /******************************************************************************
  * gameTurf.js
  *
  * 
  *****************************************************************************/
+
+"use strict";
 
 (function() {
 
@@ -2371,6 +2569,7 @@ module.exports = {
 ,   wind     : _dereq_('./systems/wind')
 ,   math     : _dereq_('./core/math')
 ,   world    :  _dereq_('./systems/world')
+,   interaction: _dereq_('./entityPlugins/interaction')
 ,   lastPositions : _dereq_('./entityPlugins/lastPositions')
 ,   entityManager : _dereq_('./managers/entityManager')
 ,   entityCollisionDetection : _dereq_('./detectors/entityCollisionDetection')
@@ -2378,7 +2577,37 @@ module.exports = {
 
 }())
 
-},{"./core/game":1,"./core/input":2,"./core/math":3,"./core/settings":4,"./core/sound":5,"./core/theatre":6,"./core/ui":7,"./core/util":8,"./detectors/entityCollisionDetection":9,"./entityPlugins/face":11,"./entityPlugins/lastPositions":12,"./entityPlugins/physics":13,"./managers/entityManager":16,"./systems/wind":18,"./systems/world":19}],15:[function(_dereq_,module,exports){
+},{"./core/game":1,"./core/input":2,"./core/math":3,"./core/settings":4,"./core/sound":5,"./core/theatre":6,"./core/ui":7,"./core/util":8,"./detectors/entityCollisionDetection":9,"./entityPlugins/face":11,"./entityPlugins/interaction":12,"./entityPlugins/lastPositions":13,"./entityPlugins/physics":14,"./managers/entityManager":18,"./systems/wind":20,"./systems/world":21}],16:[function(_dereq_,module,exports){
+/**
+ * physicsHelper.js
+ *
+ */
+
+(function() {
+
+    /*global require, module */
+    
+    var settings  = _dereq_('./../core/settings')
+    
+    var physicsHelper = {
+
+        
+
+        /**
+         * 
+         * @param {*} timeElapsed 
+         * @param {*} velocityDirection 
+         */
+        calculateVelocityForTime: function (timeElapsed, velocityDirection) {
+            return Math.round(((timeElapsed/10) * velocityDirection)*1000)/1000;
+        }
+    }
+    
+    module.exports = physicsHelper
+    
+}());
+
+},{"./../core/settings":4}],17:[function(_dereq_,module,exports){
 /******************************************************************************
  * tilesHelper.js
  *
@@ -2587,8 +2816,8 @@ var tileHelper = {
 
       var tilePosition = {}
 
-      for (y = mintileArrayPositionY; y <= maxtileArrayPositionY; y++) {
-        for (x = mintileArrayPositionX; x <= maxtileArrayPositionX; x++) {
+      for (var y = mintileArrayPositionY; y <= maxtileArrayPositionY; y++) {
+        for (var x = mintileArrayPositionX; x <= maxtileArrayPositionX; x++) {
 
           var tiletype = mapWithTileTypes[y * worldWith + x]
 
@@ -2606,7 +2835,7 @@ var tileHelper = {
           , settings.tileSize +1
           , "#CCDDAF")
 
-          tileHelper.drawGrass(tilePosition, tileWidth, tileHeight)
+          //tileHelper.drawGrass(tilePosition, tileWidth, tileHeight)
         }
       }
     }
@@ -2638,7 +2867,7 @@ module.exports = tileHelper
 
 }());
 
-},{"./../core/settings":4,"./../core/theatre":6}],16:[function(_dereq_,module,exports){
+},{"./../core/settings":4,"./../core/theatre":6}],18:[function(_dereq_,module,exports){
 /******************************************************************************
  * entityManager.js
  *
@@ -2652,7 +2881,7 @@ module.exports = tileHelper
 var QuadTree  = _dereq_('../../vendors/QuadTree')
 var theatre   = _dereq_('../core/theatre')
 var util      = _dereq_('../core/util')
-var QuadTree = QuadTree.QuadTree;
+QuadTree = QuadTree.QuadTree;
 
 var entityManager = {
 
@@ -2672,7 +2901,7 @@ var entityManager = {
       entityManager.enitites[nextIndex] = entity
     }
 
-  , update: function(){
+  , update: function(timeElapsed){
 
       entityManager.visableEntities = entityManager.tree.retrieveInBounds({
         x      : theatre.canvasBoxLeft
@@ -2682,36 +2911,37 @@ var entityManager = {
       })
 
       for (var y = entityManager.enitites.length - 1; y >= 0; y--) {
-        entityManager.enitites[y].update()
+        entityManager.enitites[y].update(timeElapsed)
       }
 
       entityManager.tree.clear();
       for (var i = entityManager.enitites.length - 1; i >= 0; i--) {
-        entityManager.tree.insert(entityManager.enitites[i].physics)
+        entityManager.enitites[i].physics.position.id = entityManager.enitites[i].physics.id
+        entityManager.tree.insert(entityManager.enitites[i].physics.position)
       }
     }
 
-  , postUpdate: function(){
+  , postUpdate: function(timeElapsed){
       for (var i = entityManager.enitites.length - 1; i >= 0; i--) {
         if (entityManager.enitites[i].postUpdate) {
-          entityManager.enitites[i].postUpdate()
+          entityManager.enitites[i].postUpdate(timeElapsed)
         }
       }
     }
   
-  , preDraw: function(){
+  , preDraw: function(timeElapsed){
       for (var i = entityManager.visableEntities.length - 1; i >= 0; i--) {
         var id = entityManager.visableEntities[i].id
         if (entityManager.enitites[id].preDraw) {
-          entityManager.enitites[id].preDraw()
+          entityManager.enitites[id].preDraw(timeElapsed)
         }
       }
     }
 
-  , draw: function(){
+  , draw: function(timeElapsed){
       for (var i = entityManager.visableEntities.length - 1; i >= 0; i--) {
         var id = entityManager.visableEntities[i].id
-        entityManager.enitites[id].draw()
+        entityManager.enitites[id].draw(timeElapsed)
       }
     }
 
@@ -2731,8 +2961,8 @@ var entityManager = {
         }
 
         var distanceVector = {
-          x: entity.physics.x - checkEntity.physics.x
-        , y: entity.physics.y - checkEntity.physics.y
+          x: entity.physics.position.x - checkEntity.physics.position.x
+        , y: entity.physics.position.y - checkEntity.physics.position.y
         }
 
         var checkDistance = util.vectorLength(distanceVector)
@@ -2752,7 +2982,7 @@ module.exports = entityManager
 
 }())
 
-},{"../../vendors/QuadTree":20,"../core/theatre":6,"../core/util":8}],17:[function(_dereq_,module,exports){
+},{"../../vendors/QuadTree":22,"../core/theatre":6,"../core/util":8}],19:[function(_dereq_,module,exports){
 /******************************************************************************
  * windParticleFactory.js
  *
@@ -2767,14 +2997,17 @@ var theatre       = _dereq_('./../core/theatre')
 var Physics       = _dereq_('./../entityPlugins/physics')
 var LastPositions = _dereq_('./../entityPlugins/lastPositions')
 var sound         = _dereq_('./../core/sound')
+var physicsHelper = _dereq_('./../helpers/physicsHelper')
 
 var WindParticleFactory = function(){
 
   var WindParticle = {
     
       physics: Physics({
-        x              : 0
-      , y              : 0
+        position: {
+          x : 0
+        , y : 0
+        }
       , height         : 5
       , width          : 5
       , canWorldColide : false
@@ -2799,11 +3032,11 @@ var WindParticleFactory = function(){
         WindParticle.createdTime = Date.now()
         WindParticle.isAlive     = true
         sound.playEffect('wind')
-        WindParticle.physics.x = theatre.canvasBoxLeft + (Math.random() * theatre.stageCanvas.width)
-        WindParticle.physics.y = theatre.canvasBoxTop  + (Math.random() * theatre.stageCanvas.height)
+        WindParticle.physics.position.x = theatre.canvasBoxLeft + (Math.random() * theatre.stageCanvas.width)
+        WindParticle.physics.position.y = theatre.canvasBoxTop  + (Math.random() * theatre.stageCanvas.height)
       }
 
-    , update: function(windDirection, windSpeed){
+    , update: function(timeElapsed, windDirection, windSpeed){
 
         var currentLifeTime = Date.now() - WindParticle.createdTime
 
@@ -2825,14 +3058,16 @@ var WindParticleFactory = function(){
 
           WindParticle.physics.speed = windSpeed
 
-          WindParticle.movementDirectionData.vector.x = Math.random() - 0.5 + windDirection.x
-          WindParticle.movementDirectionData.vector.y = Math.random() - 0.5 + windDirection.y
+          
+          WindParticle.movementDirectionData.vector.x = (Math.random() - 0.5 + windDirection.x)
+          WindParticle.movementDirectionData.vector.y = (Math.random() - 0.5 + windDirection.y)
 
-          WindParticle.physics.update(WindParticle.movementDirectionData)
+          WindParticle.physics.update(timeElapsed, WindParticle.movementDirectionData)
         }
       }
 
-      , draw: function(){
+      , draw: function(timeElapsed){
+
         WindParticle.lastPositions.draw(WindParticle.physics)
         /*
         var currentLifeTime = Date.now() - WindParticle.createdTime
@@ -2853,7 +3088,7 @@ module.exports =  WindParticleFactory
 
 }())
 
-},{"./../core/sound":5,"./../core/theatre":6,"./../entityPlugins/lastPositions":12,"./../entityPlugins/physics":13}],18:[function(_dereq_,module,exports){
+},{"./../core/sound":5,"./../core/theatre":6,"./../entityPlugins/lastPositions":13,"./../entityPlugins/physics":14,"./../helpers/physicsHelper":16}],20:[function(_dereq_,module,exports){
 /******************************************************************************
  * wind.js
  *
@@ -2881,13 +3116,13 @@ var wind = {
     }
 
   , incluenceEntityPhysic: function(physics, moveDirectionVector){
-      if (Math.random() > 0.95) {
-        moveDirectionVector.x += (wind.windDirection.x * (1 / physics.mass)) / 100
-        moveDirectionVector.y += (wind.windDirection.y * (1 / physics.mass)) / 100
+      if (Math.random() > 0.5) {
+        moveDirectionVector.x += (wind.windDirection.x * (1 / physics.mass)) / 1000
+        moveDirectionVector.y += (wind.windDirection.y * (1 / physics.mass)) / 1000
       }
     }
 
-  , update: function(){
+  , update: function(timeElapsed){
 
       if (Math.random()>0.995){
         wind.windSpeed = (Math.random() * 9) + 1
@@ -2910,15 +3145,15 @@ var wind = {
 
       for (var i = 0; i < wind.maxAliveWindPartiles; i++){
         if (wind.windParticles[i].isAlive){
-          wind.windParticles[i].update(wind.windDirection, wind.windSpeed)
+          wind.windParticles[i].update(timeElapsed, wind.windDirection, wind.windSpeed)
         }
       }
     }
 
-  , draw: function(){
+  , draw: function(timeElapsed){
       for (var i = 0; i < wind.maxAliveWindPartiles; i++){
         if (wind.windParticles[i].isAlive){
-          wind.windParticles[i].draw()
+          wind.windParticles[i].draw(timeElapsed)
         }
       }
     }
@@ -2930,7 +3165,7 @@ module.exports = wind
 
 }())
 
-},{"./../core/util":8,"./WindParticleFactory":17}],19:[function(_dereq_,module,exports){
+},{"./../core/util":8,"./WindParticleFactory":19}],21:[function(_dereq_,module,exports){
 /******************************************************************************
  * gameTurf.js
  *
@@ -2978,23 +3213,21 @@ var world = {
      *  @param {} 
      */
   , collsitionDetection: function(
-      hitbox
-    , moveDirectionVector
-    , isBounce
+      timeElapsed
+    , physics
     ){  
       return worldCollsitionDetection.collsitionDetection(
-        world.mapWithTileTypes
+        timeElapsed
+      , world.mapWithTileTypes
       , world.worldWith
       , world.wolrdHeight
-      , hitbox
-      , moveDirectionVector
-      , isBounce)
+      , physics)
     }
 
     /**
      *
      */
-  , draw: function() {
+  , draw: function(timeElapsed) {
       tilesHelper.drawTiles(
         world.mapWithTileTypes
       , world.worldWith
@@ -3006,7 +3239,7 @@ module.exports =  world
 
 }())
 
-},{"./../detectors/worldCollsitionDetection":10,"./../helpers/tilesHelper":15}],20:[function(_dereq_,module,exports){
+},{"./../detectors/worldCollsitionDetection":10,"./../helpers/tilesHelper":17}],22:[function(_dereq_,module,exports){
 /*
 	The MIT License
 
@@ -3537,7 +3770,7 @@ if ( typeof Object.getPrototypeOf !== "function" ) {
 */
 
 }(this));
-},{}],21:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
 var dat=dat||{};dat.gui=dat.gui||{};dat.utils=dat.utils||{};dat.controllers=dat.controllers||{};dat.dom=dat.dom||{};dat.color=dat.color||{};dat.utils.css=function(){return{load:function(e,a){a=a||document;var b=a.createElement("link");b.type="text/css";b.rel="stylesheet";b.href=e;a.getElementsByTagName("head")[0].appendChild(b)},inject:function(e,a){a=a||document;var b=document.createElement("style");b.type="text/css";b.innerHTML=e;a.getElementsByTagName("head")[0].appendChild(b)}}}();
 dat.utils.common=function(){var e=Array.prototype.forEach,a=Array.prototype.slice;return{BREAK:{},extend:function(b){this.each(a.call(arguments,1),function(a){for(var f in a)this.isUndefined(a[f])||(b[f]=a[f])},this);return b},defaults:function(b){this.each(a.call(arguments,1),function(a){for(var f in a)this.isUndefined(b[f])&&(b[f]=a[f])},this);return b},compose:function(){var b=a.call(arguments);return function(){for(var d=a.call(arguments),f=b.length-1;0<=f;f--)d=[b[f].apply(this,d)];return d[0]}},
 each:function(a,d,f){if(e&&a.forEach===e)a.forEach(d,f);else if(a.length===a.length+0)for(var c=0,p=a.length;c<p&&!(c in a&&d.call(f,a[c],c)===this.BREAK);c++);else for(c in a)if(d.call(f,a[c],c)===this.BREAK)break},defer:function(a){setTimeout(a,0)},toArray:function(b){return b.toArray?b.toArray():a.call(b)},isUndefined:function(a){return void 0===a},isNull:function(a){return null===a},isNaN:function(a){return a!==a},isArray:Array.isArray||function(a){return a.constructor===Array},isObject:function(a){return a===
@@ -3620,18 +3853,18 @@ window.mozRequestAnimationFrame||window.oRequestAnimationFrame||window.msRequest
 document.createElement("div");a.extend(this.domElement.style,{position:"fixed",display:"none",zIndex:"1001",opacity:0,WebkitTransition:"-webkit-transform 0.2s ease-out, opacity 0.2s linear"});document.body.appendChild(this.backgroundElement);document.body.appendChild(this.domElement);var b=this;e.bind(this.backgroundElement,"click",function(){b.hide()})};b.prototype.show=function(){var b=this;this.backgroundElement.style.display="block";this.domElement.style.display="block";this.domElement.style.opacity=
 0;this.domElement.style.webkitTransform="scale(1.1)";this.layout();a.defer(function(){b.backgroundElement.style.opacity=1;b.domElement.style.opacity=1;b.domElement.style.webkitTransform="scale(1)"})};b.prototype.hide=function(){var a=this,b=function(){a.domElement.style.display="none";a.backgroundElement.style.display="none";e.unbind(a.domElement,"webkitTransitionEnd",b);e.unbind(a.domElement,"transitionend",b);e.unbind(a.domElement,"oTransitionEnd",b)};e.bind(this.domElement,"webkitTransitionEnd",
 b);e.bind(this.domElement,"transitionend",b);e.bind(this.domElement,"oTransitionEnd",b);this.backgroundElement.style.opacity=0;this.domElement.style.opacity=0;this.domElement.style.webkitTransform="scale(1.1)"};b.prototype.layout=function(){this.domElement.style.left=window.innerWidth/2-e.getWidth(this.domElement)/2+"px";this.domElement.style.top=window.innerHeight/2-e.getHeight(this.domElement)/2+"px"};return b}(dat.dom.dom,dat.utils.common),dat.dom.dom,dat.utils.common);
-},{}],22:[function(_dereq_,module,exports){
+},{}],24:[function(_dereq_,module,exports){
 /*! howler.js v2.0.0-beta1 | (c) 2013-2015, James Simpson of GoldFire Studios | MIT License | howlerjs.com */
 !function(){"use strict";function e(){try{"undefined"!=typeof AudioContext?n=new AudioContext:"undefined"!=typeof webkitAudioContext?n=new webkitAudioContext:o=!1}catch(e){o=!1}if(!o)if("undefined"!=typeof Audio)try{new Audio}catch(e){t=!0}else t=!0}var n=null,o=!0,t=!1;if(e(),o){var r="undefined"==typeof n.createGain?n.createGainNode():n.createGain();r.gain.value=1,r.connect(n.destination)}var d=function(){this.init()};d.prototype={init:function(){var e=this||u;return e._codecs={},e._howls=[],e._muted=!1,e._volume=1,e.iOSAutoEnable=!0,e.noAudio=t,e.usingWebAudio=o,e.ctx=n,t||e._setupCodecs(),e},volume:function(e){var n=this||u;if(e=parseFloat(e),"undefined"!=typeof e&&e>=0&&1>=e){n._volume=e,o&&(r.gain.value=e);for(var t=0;t<n._howls.length;t++)if(!n._howls[t]._webAudio)for(var d=n._howls[t]._getSoundIds(),a=0;a<d.length;a++){var i=n._howls[t]._soundById(d[a]);i&&i._node&&(i._node.volume=i._volume*e)}return n}return n._volume},mute:function(e){var n=this||u;n._muted=e,o&&(r.gain.value=e?0:n._volume);for(var t=0;t<n._howls.length;t++)if(!n._howls[t]._webAudio)for(var d=n._howls[t]._getSoundIds(),a=0;a<d.length;a++){var i=n._howls[t]._soundById(d[a]);i&&i._node&&(i._node.muted=e?!0:i._muted)}return n},codecs:function(e){return(this||u)._codecs[e]},_setupCodecs:function(){var e=this||u,n=new Audio,o=n.canPlayType("audio/mpeg;").replace(/^no$/,""),t=/OPR\//.test(navigator.userAgent);return e._codecs={mp3:!(t||!o&&!n.canPlayType("audio/mp3;").replace(/^no$/,"")),mpeg:!!o,opus:!!n.canPlayType('audio/ogg; codecs="opus"').replace(/^no$/,""),ogg:!!n.canPlayType('audio/ogg; codecs="vorbis"').replace(/^no$/,""),wav:!!n.canPlayType('audio/wav; codecs="1"').replace(/^no$/,""),aac:!!n.canPlayType("audio/aac;").replace(/^no$/,""),m4a:!!(n.canPlayType("audio/x-m4a;")||n.canPlayType("audio/m4a;")||n.canPlayType("audio/aac;")).replace(/^no$/,""),mp4:!!(n.canPlayType("audio/x-mp4;")||n.canPlayType("audio/mp4;")||n.canPlayType("audio/aac;")).replace(/^no$/,""),weba:!!n.canPlayType('audio/webm; codecs="vorbis"').replace(/^no$/,""),webm:!!n.canPlayType('audio/webm; codecs="vorbis"').replace(/^no$/,"")},e},_enableiOSAudio:function(){var e=this||u;if(!n||!e._iOSEnabled&&/iPhone|iPad|iPod/i.test(navigator.userAgent)){e._iOSEnabled=!1;var o=function(){var t=n.createBuffer(1,1,22050),r=n.createBufferSource();r.buffer=t,r.connect(n.destination),"undefined"==typeof r.start?r.noteOn(0):r.start(0),setTimeout(function(){(r.playbackState===r.PLAYING_STATE||r.playbackState===r.FINISHED_STATE)&&(e._iOSEnabled=!0,e.iOSAutoEnable=!1,document.removeEventListener("touchend",o,!1))},0)};return document.addEventListener("touchend",o,!1),e}}};var u=new d,a=function(e){var n=this;return e.src&&0!==e.src.length?void n.init(e):void console.error("An array of source files must be passed with any new Howl.")};a.prototype={init:function(e){var t=this;return t._autoplay=e.autoplay||!1,t._ext=e.ext||null,t._html5=e.html5||!1,t._muted=e.mute||!1,t._loop=e.loop||!1,t._pool=e.pool||5,t._preload="boolean"==typeof e.preload?e.preload:!0,t._rate=e.rate||1,t._sprite=e.sprite||{},t._src="string"!=typeof e.src?e.src:[e.src],t._volume=void 0!==e.volume?e.volume:1,t._duration=0,t._loaded=!1,t._sounds=[],t._endTimers={},t._onend=e.onend?[{fn:e.onend}]:[],t._onfaded=e.onfaded?[{fn:e.onfaded}]:[],t._onload=e.onload?[{fn:e.onload}]:[],t._onloaderror=e.onloaderror?[{fn:e.onloaderror}]:[],t._onpause=e.onpause?[{fn:e.onpause}]:[],t._onplay=e.onplay?[{fn:e.onplay}]:[],t._onstop=e.onstop?[{fn:e.onstop}]:[],t._webAudio=o&&!t._html5,"undefined"!=typeof n&&n&&u.iOSAutoEnable&&u._enableiOSAudio(),u._howls.push(t),t._preload&&t.load(),t},load:function(){var e=this,n=null;if(t)return void e._emit("loaderror");"string"==typeof e._src&&(e._src=[e._src]);for(var o=0;o<e._src.length;o++){var r,d;if(e._ext&&e._ext[o]?r=e._ext[o]:(d=e._src[o],r=/^data:audio\/([^;,]+);/i.exec(d),r||(r=/\.([^.]+)$/.exec(d.split("?",1)[0])),r&&(r=r[1].toLowerCase())),u.codecs(r)){n=e._src[o];break}}return n?(e._src=n,new i(e),e._webAudio&&s(e),e):void e._emit("loaderror")},play:function(e){var o=this,t=arguments,r=null;if("number"==typeof e)r=e,e=null;else if("undefined"==typeof e){e="__default";for(var d=0,a=0;a<o._sounds.length;a++)o._sounds[a]._paused&&!o._sounds[a]._ended&&(d++,r=o._sounds[a]._id);1===d?e=null:r=null}var i=r?o._soundById(r):o._inactiveSound();if(!i)return null;if(r&&!e&&(e=i._sprite||"__default"),!o._loaded&&!o._sprite[e])return o.once("load",function(){o.play(o._soundById(i._id)?i._id:void 0)}),i._id;if(r&&!i._paused)return i._id;var _=i._seek>0?i._seek:o._sprite[e][0]/1e3,s=(o._sprite[e][0]+o._sprite[e][1])/1e3-_,l=1e3*s/Math.abs(i._rate);o._endTimers[i._id]=setTimeout(o._ended.bind(o,i),l),i._paused=!1,i._ended=!1,i._sprite=e,i._seek=_,i._start=o._sprite[e][0]/1e3,i._stop=(o._sprite[e][0]+o._sprite[e][1])/1e3,i._loop=!(!i._loop&&!o._sprite[e][2]);var f=i._node;if(o._webAudio){var c=function(){o._refreshBuffer(i);var e=i._muted||o._muted?0:i._volume*u.volume();f.gain.setValueAtTime(e,n.currentTime),i._playStart=n.currentTime,"undefined"==typeof f.bufferSource.start?i._loop?f.bufferSource.noteGrainOn(0,_,86400):f.bufferSource.noteGrainOn(0,_,s):i._loop?f.bufferSource.start(0,_,86400):f.bufferSource.start(0,_,s),o._endTimers[i._id]||(o._endTimers[i._id]=setTimeout(o._ended.bind(o,i),l)),t[1]||setTimeout(function(){o._emit("play",i._id)},0)};o._loaded?c():(o.once("load",c),o._clearTimer(i._id))}else{var p=function(){f.currentTime=_,f.muted=i._muted||o._muted||u._muted||f.muted,f.volume=i._volume*u.volume(),f.playbackRate=i._rate,setTimeout(function(){f.play(),t[1]||o._emit("play",i._id)},0)};if(4===f.readyState||!f.readyState&&navigator.isCocoonJS)p();else{var m=function(){o._endTimers[i._id]=setTimeout(o._ended.bind(o,i),l),p(),f.removeEventListener("canplaythrough",m,!1)};f.addEventListener("canplaythrough",m,!1),o._clearTimer(i._id)}}return i._id},pause:function(e){var n=this;if(!n._loaded)return n.once("play",function(){n.pause(e)}),n;for(var o=n._getSoundIds(e),t=0;t<o.length;t++){n._clearTimer(o[t]);var r=n._soundById(o[t]);if(r&&!r._paused){if(r._seek=n.seek(o[t]),r._paused=!0,n._webAudio){if(!r._node.bufferSource)return n;"undefined"==typeof r._node.bufferSource.stop?r._node.bufferSource.noteOff(0):r._node.bufferSource.stop(0),r._node.bufferSource=null}else isNaN(r._node.duration)||r._node.pause();arguments[1]||n._emit("pause",r._id)}}return n},stop:function(e){var n=this;if(!n._loaded)return"undefined"!=typeof n._sounds[0]._sprite&&n.once("play",function(){n.stop(e)}),n;for(var o=n._getSoundIds(e),t=0;t<o.length;t++){n._clearTimer(o[t]);var r=n._soundById(o[t]);if(r&&!r._paused){if(r._seek=r._start||0,r._paused=!0,r._ended=!0,n._webAudio&&r._node){if(!r._node.bufferSource)return n;"undefined"==typeof r._node.bufferSource.stop?r._node.bufferSource.noteOff(0):r._node.bufferSource.stop(0),r._node.bufferSource=null}else r._node&&!isNaN(r._node.duration)&&(r._node.pause(),r._node.currentTime=r._start||0);n._emit("stop",r._id)}}return n},mute:function(e,o){var t=this;if(!t._loaded)return t.once("play",function(){t.mute(e,o)}),t;if("undefined"==typeof o){if("boolean"!=typeof e)return t._muted;t._muted=e}for(var r=t._getSoundIds(o),d=0;d<r.length;d++){var a=t._soundById(r[d]);a&&(a._muted=e,t._webAudio&&a._node?a._node.gain.setValueAtTime(e?0:a._volume*u.volume(),n.currentTime):a._node&&(a._node.muted=u._muted?!0:e))}return t},volume:function(){var e,o,t=this,r=arguments;if(0===r.length)return t._volume;if(1===r.length){var d=t._getSoundIds(),a=d.indexOf(r[0]);a>=0?o=parseInt(r[0],10):e=parseFloat(r[0])}else 2===r.length&&(e=parseFloat(r[0]),o=parseInt(r[1],10));var i;if(!("undefined"!=typeof e&&e>=0&&1>=e))return i=o?t._soundById(o):t._sounds[0],i?i._volume:0;if(!t._loaded)return t.once("play",function(){t.volume.apply(t,r)}),t;"undefined"==typeof o&&(t._volume=e),o=t._getSoundIds(o);for(var _=0;_<o.length;_++)i=t._soundById(o[_]),i&&(i._volume=e,t._webAudio&&i._node&&!i._muted?i._node.gain.setValueAtTime(e*u.volume(),n.currentTime):i._node&&!i._muted&&(i._node.volume=e*u.volume()));return t},fade:function(e,o,t,r){var d=this;if(!d._loaded)return d.once("play",function(){d.fade(e,o,t,r)}),d;d.volume(e,r);for(var u=d._getSoundIds(r),a=0;a<u.length;a++){var i=d._soundById(u[a]);if(i)if(d._webAudio&&!i._muted){var _=n.currentTime,s=_+t/1e3;i._volume=e,i._node.gain.setValueAtTime(e,_),i._node.gain.linearRampToValueAtTime(o,s),setTimeout(function(e,t){setTimeout(function(){t._volume=o,d._emit("faded",e)},s-n.currentTime>0?Math.ceil(1e3*(s-n.currentTime)):0)}.bind(d,u[a],i),t)}else{var l=Math.abs(e-o),f=e>o?"out":"in",c=l/.01,p=t/c;!function(){var n=e,t=setInterval(function(e){n+="in"===f?.01:-.01,n=Math.max(0,n),n=Math.min(1,n),n=Math.round(100*n)/100,d.volume(n,e),n===o&&(clearInterval(t),d._emit("faded",e))}.bind(d,u[a]),p)}()}}return d},loop:function(){var e,n,o,t=this,r=arguments;if(0===r.length)return t._loop;if(1===r.length){if("boolean"!=typeof r[0])return o=t._soundById(parseInt(r[0],10)),o?o._loop:!1;e=r[0],t._loop=e}else 2===r.length&&(e=r[0],n=parseInt(r[1],10));for(var d=t._getSoundIds(n),u=0;u<d.length;u++)o=t._soundById(d[u]),o&&(o._loop=e,t._webAudio&&o._node&&o._node.bufferSource&&(o._node.bufferSource.loop=e));return t},rate:function(){var e,n,o=this,t=arguments;if(0===t.length)n=o._sounds[0]._id;else if(1===t.length){var r=o._getSoundIds(),d=r.indexOf(t[0]);d>=0?n=parseInt(t[0],10):e=parseFloat(t[0])}else 2===t.length&&(e=parseFloat(t[0]),n=parseInt(t[1],10));var u;if("number"!=typeof e)return u=o._soundById(n),u?u._rate:o._rate;if(!o._loaded)return o.once("load",function(){o.rate.apply(o,t)}),o;"undefined"==typeof n&&(o._rate=e),n=o._getSoundIds(n);for(var a=0;a<n.length;a++)if(u=o._soundById(n[a])){u._rate=e,o._webAudio&&u._node&&u._node.bufferSource?u._node.bufferSource.playbackRate.value=e:u._node&&(u._node.playbackRate=e);var i=o.seek(n[a]),_=(o._sprite[u._sprite][0]+o._sprite[u._sprite][1])/1e3-i,s=1e3*_/Math.abs(u._rate);o._clearTimer(n[a]),o._endTimers[n[a]]=setTimeout(o._ended.bind(o,u),s)}return o},seek:function(){var e,o,t=this,r=arguments;if(0===r.length)o=t._sounds[0]._id;else if(1===r.length){var d=t._getSoundIds(),u=d.indexOf(r[0]);u>=0?o=parseInt(r[0],10):(o=t._sounds[0]._id,e=parseFloat(r[0]))}else 2===r.length&&(e=parseFloat(r[0]),o=parseInt(r[1],10));if("undefined"==typeof o)return t;if(!t._loaded)return t.once("load",function(){t.seek.apply(t,r)}),t;var a=t._soundById(o);if(a){if(!(e>=0))return t._webAudio?a._seek+(t.playing(o)?n.currentTime-a._playStart:0):a._node.currentTime;var i=t.playing(o);i&&t.pause(o,!0),a._seek=e,t._clearTimer(o),i&&t.play(o,!0)}return t},playing:function(e){var n=this,o=n._soundById(e)||n._sounds[0];return o?!o._paused:!1},duration:function(){return this._duration},unload:function(){for(var e=this,n=e._sounds,o=0;o<n.length;o++){n[o]._paused||(e.stop(n[o]._id),e._emit("end",n[o]._id)),e._webAudio||(n[o]._node.src="",n[o]._node.removeEventListener("error",n[o]._errorFn,!1),n[o]._node.removeEventListener("canplaythrough",n[o]._loadFn,!1)),delete n[o]._node,e._clearTimer(n[o]._id);var t=u._howls.indexOf(e);t>=0&&u._howls.splice(t,1)}return _&&delete _[e._src],e=null,null},on:function(e,n,o,t){var r=this,d=r["_on"+e];return"function"==typeof n&&d.push(t?{id:o,fn:n,once:t}:{id:o,fn:n}),r},off:function(e,n,o){var t=this,r=t["_on"+e];if(n){for(var d=0;d<r.length;d++)if(n===r[d].fn&&o===r[d].id){r.splice(d,1);break}}else t["on"+e]=[];return t},once:function(e,n,o){var t=this;return t.on(e,n,o,1),t},_emit:function(e,n,o){for(var t=this,r=t["_on"+e],d=0;d<r.length;d++)r[d].id&&r[d].id!==n||(setTimeout(function(e){e.call(this,n,o)}.bind(t,r[d].fn),0),r[d].once&&t.off(e,r[d].fn,n));return t},_ended:function(e){var o=this,t=e._sprite,r=!(!e._loop&&!o._sprite[t][2]);if(o._emit("end",e._id),!o._webAudio&&r&&o.stop(e._id).play(e._id),o._webAudio&&r){o._emit("play",e._id),e._seek=e._start||0,e._playStart=n.currentTime;var d=1e3*(e._stop-e._start)/Math.abs(e._rate);o._endTimers[e._id]=setTimeout(o._ended.bind(o,e),d)}return o._webAudio&&!r&&(e._paused=!0,e._ended=!0,e._seek=e._start||0,o._clearTimer(e._id),e._node.bufferSource=null),o._webAudio||r||o.stop(e._id),o},_clearTimer:function(e){var n=this;return n._endTimers[e]&&(clearTimeout(n._endTimers[e]),delete n._endTimers[e]),n},_soundById:function(e){for(var n=this,o=0;o<n._sounds.length;o++)if(e===n._sounds[o]._id)return n._sounds[o];return null},_inactiveSound:function(){var e=this;e._drain();for(var n=0;n<e._sounds.length;n++)if(e._sounds[n]._ended)return e._sounds[n].reset();return new i(e)},_drain:function(){var e=this,n=e._pool,o=0,t=0;if(!(e._sounds.length<n)){for(t=0;t<e._sounds.length;t++)e._sounds[t]._ended&&o++;for(t=e._sounds.length-1;t>=0;t--){if(n>=o)return;e._sounds[t]._ended&&(e._webAudio&&e._sounds[t]._node&&e._sounds[t]._node.disconnect(0),e._sounds.splice(t,1),o--)}}},_getSoundIds:function(e){var n=this;if("undefined"==typeof e){for(var o=[],t=0;t<n._sounds.length;t++)o.push(n._sounds[t]._id);return o}return[e]},_refreshBuffer:function(e){var o=this;return e._node.bufferSource=n.createBufferSource(),e._node.bufferSource.buffer=_[o._src],e._node.bufferSource.connect(e._panner?e._panner:e._node),e._node.bufferSource.loop=e._loop,e._loop&&(e._node.bufferSource.loopStart=e._start||0,e._node.bufferSource.loopEnd=e._stop),e._node.bufferSource.playbackRate.value=o._rate,o}};var i=function(e){this._parent=e,this.init()};if(i.prototype={init:function(){var e=this,n=e._parent;return e._muted=n._muted,e._loop=n._loop,e._volume=n._volume,e._muted=n._muted,e._rate=n._rate,e._seek=0,e._paused=!0,e._ended=!0,e._id=Math.round(Date.now()*Math.random()),n._sounds.push(e),e.create(),e},create:function(){var e=this,o=e._parent,t=u._muted||e._muted||e._parent._muted?0:e._volume*u.volume();return o._webAudio?(e._node="undefined"==typeof n.createGain?n.createGainNode():n.createGain(),e._node.gain.setValueAtTime(t,n.currentTime),e._node.paused=!0,e._node.connect(r)):(e._node=new Audio,e._errorFn=e._errorListener.bind(e),e._node.addEventListener("error",e._errorFn,!1),e._loadFn=e._loadListener.bind(e),e._node.addEventListener("canplaythrough",e._loadFn,!1),e._node.src=o._src,e._node.preload="auto",e._node.volume=t,e._node.load()),e},reset:function(){var e=this,n=e._parent;return e._muted=n._muted,e._loop=n._loop,e._volume=n._volume,e._muted=n._muted,e._rate=n._rate,e._seek=0,e._paused=!0,e._ended=!0,e._sprite=null,e._id=Math.round(Date.now()*Math.random()),e},_errorListener:function(){var e=this;e._node.error&&4===e._node.error.code&&(u.noAudio=!0),e._parent._emit("loaderror",e._id,e._node.error?e._node.error.code:0),e._node.removeEventListener("error",e._errorListener,!1)},_loadListener:function(){var e=this,n=e._parent;n._duration=Math.ceil(10*e._node.duration)/10,0===Object.keys(n._sprite).length&&(n._sprite={__default:[0,1e3*n._duration]}),n._loaded||(n._loaded=!0,n._emit("load")),n._autoplay&&n.play(),e._node.removeEventListener("canplaythrough",e._loadFn,!1)}},o)var _={},s=function(e){var n=e._src;if(_[n])return e._duration=_[n].duration,void c(e);if(/^data:[^;]+;base64,/.test(n)){window.atob=window.atob||function(e){for(var n,o,t="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",r=String(e).replace(/=+$/,""),d=0,u=0,a="";o=r.charAt(u++);~o&&(n=d%4?64*n+o:o,d++%4)?a+=String.fromCharCode(255&n>>(-2*d&6)):0)o=t.indexOf(o);return a};for(var o=atob(n.split(",")[1]),t=new Uint8Array(o.length),r=0;r<o.length;++r)t[r]=o.charCodeAt(r);f(t.buffer,e)}else{var d=new XMLHttpRequest;d.open("GET",n,!0),d.responseType="arraybuffer",d.onload=function(){f(d.response,e)},d.onerror=function(){e._webAudio&&(e._html5=!0,e._webAudio=!1,e._sounds=[],delete _[n],e.load())},l(d)}},l=function(e){try{e.send()}catch(n){e.onerror()}},f=function(e,o){n.decodeAudioData(e,function(e){e&&(_[o._src]=e,c(o,e))},function(){o._emit("loaderror")})},c=function(e,n){n&&!e._duration&&(e._duration=n.duration),0===Object.keys(e._sprite).length&&(e._sprite={__default:[0,1e3*e._duration]}),e._loaded||(e._loaded=!0,e._emit("load")),e._autoplay&&e.play()};"function"==typeof define&&define.amd&&define("howler",function(){return{Howler:u,Howl:a}}),"undefined"!=typeof exports&&(exports.Howler=u,exports.Howl=a),"undefined"!=typeof window&&(window.HowlerGlobal=d,window.Howler=u,window.Howl=a,window.Sound=i)}();
 /*! Effects Plugin */
 !function(){"use strict";HowlerGlobal.prototype.init=function(e){return function(){var n=this;return n._pos=[0,0,0],n._orientation=[0,0,-1,0,1,0],n._velocity=[0,0,0],n._listenerAttr={dopplerFactor:1,speedOfSound:343.3},e.call(this,o)}}(HowlerGlobal.prototype.init),HowlerGlobal.prototype.pos=function(e,n,t){var o=this;return o.ctx&&o.ctx.listener?(n="number"!=typeof n?o._pos[1]:n,t="number"!=typeof t?o._pos[2]:t,"number"!=typeof e?o._pos:(o._pos=[e,n,t],o.ctx.listener.setPosition(o._pos[0],o._pos[1],o._pos[2]),o)):o},HowlerGlobal.prototype.orientation=function(e,n,t,o,r,i){var a=this;if(!a.ctx||!a.ctx.listener)return a;var p=a._orientation;return n="number"!=typeof n?p[1]:n,t="number"!=typeof t?p[2]:t,o="number"!=typeof o?p[3]:o,r="number"!=typeof r?p[4]:r,i="number"!=typeof i?p[5]:i,"number"!=typeof e?p:(a._orientation=[e,n,t,o,r,i],a.ctx.listener.setOrientation(p[0],p[1],p[2],p[3],p[4],p[5]),a)},HowlerGlobal.prototype.velocity=function(e,n,t){var o=this;return o.ctx&&o.ctx.listener?(n="number"!=typeof n?o._velocity[1]:n,t="number"!=typeof t?o._velocity[2]:t,"number"!=typeof e?o._velocity:(o._velocity=[e,n,t],o.ctx.listener.setVelocity(o._velocity[0],o._velocity[1],o._velocity[2]),o)):o},HowlerGlobal.prototype.listenerAttr=function(e){var n=this;if(!n.ctx||!n.ctx.listener)return n;var t=n._listenerAttr;return e?(n._listenerAttr={dopplerFactor:"undefined"!=typeof e.dopplerFactor?e.dopplerFactor:t.dopplerFactor,speedOfSound:"undefined"!=typeof e.speedOfSound?e.speedOfSound:t.speedOfSound},n.ctx.listener.dopplerFactor=t.dopplerFactor,n.ctx.listener.speedOfSound=t.speedOfSound,n):t},Howl.prototype.init=function(e){return function(n){var t=this;return t._orientation=n.orientation||[1,0,0],t._pos=n.pos||null,t._velocity=n.velocity||[0,0,0],t._pannerAttr={coneInnerAngle:"undefined"!=typeof n.coneInnerAngle?n.coneInnerAngle:360,coneOUterAngle:"undefined"!=typeof n.coneOUterAngle?n.coneOUterAngle:360,coneOuterGain:"undefined"!=typeof n.coneOuterGain?n.coneOuterGain:0,distanceModel:"undefined"!=typeof n.distanceModel?n.distanceModel:"inverse",maxDistance:"undefined"!=typeof n.maxDistance?n.maxDistance:1e4,panningModel:"undefined"!=typeof n.panningModel?n.panningModel:"HRTF",refDistance:"undefined"!=typeof n.refDistance?n.refDistance:1,rolloffFactor:"undefined"!=typeof n.rolloffFactor?n.rolloffFactor:1},e.call(this,n)}}(Howl.prototype.init),Howl.prototype.pos=function(n,t,o,r){var i=this;if(!i._webAudio)return i;if(!i._loaded)return i.once("play",function(){i.pos(n,t,o,r)}),i;if(t="number"!=typeof t?0:t,o="number"!=typeof o?-.5:o,"undefined"==typeof r){if("number"!=typeof n)return i._pos;i._pos=[n,t,o]}for(var a=i._getSoundIds(r),p=0;p<a.length;p++){var l=i._soundById(a[p]);if(l){if("number"!=typeof n)return l._pos;l._pos=[n,t,o],l._node&&(l._panner||e(l),l._panner.setPosition(n,t,o))}}return i},Howl.prototype.orientation=function(n,t,o,r){var i=this;if(!i._webAudio)return i;if(!i._loaded)return i.once("play",function(){i.orientation(n,t,o,r)}),i;if(t="number"!=typeof t?i._orientation[1]:t,o="number"!=typeof o?i._orientation[1]:o,"undefined"==typeof r){if("number"!=typeof n)return i._orientation;i._orientation=[n,t,o]}for(var a=i._getSoundIds(r),p=0;p<a.length;p++){var l=i._soundById(a[p]);if(l){if("number"!=typeof n)return l._orientation;l._orientation=[n,t,o],l._node&&(l._panner||e(l),l._panner.setOrientation(n,t,o))}}return i},Howl.prototype.velocity=function(n,t,o,r){var i=this;if(!i._webAudio)return i;if(!i._loaded)return i.once("play",function(){i.velocity(n,t,o,r)}),i;if(t="number"!=typeof t?i._velocity[1]:t,o="number"!=typeof o?i._velocity[1]:o,"undefined"==typeof r){if("number"!=typeof n)return i._velocity;i._velocity=[n,t,o]}for(var a=i._getSoundIds(r),p=0;p<a.length;p++){var l=i._soundById(a[p]);if(l){if("number"!=typeof n)return l._velocity;l._velocity=[n,t,o],l._node&&(l._panner||e(l),l._panner.setVelocity(n,t,o))}}return i},Howl.prototype.pannerAttr=function(){var n,t,o,r=this,i=arguments;if(!r._webAudio)return r;if(0===i.length)return r._pannerAttr;if(1===i.length){if("object"!=typeof i[0])return o=r._soundById(parseInt(i[0],10)),o?o._pannerAttr:r._pannerAttr;n=i[0],"undefined"==typeof t&&(r._pannerAttr={coneInnerAngle:"undefined"!=typeof n.coneInnerAngle?n.coneInnerAngle:r._coneInnerAngle,coneOUterAngle:"undefined"!=typeof n.coneOUterAngle?n.coneOUterAngle:r._coneOUterAngle,coneOuterGain:"undefined"!=typeof n.coneOuterGain?n.coneOuterGain:r._coneOuterGain,distanceModel:"undefined"!=typeof n.distanceModel?n.distanceModel:r._distanceModel,maxDistance:"undefined"!=typeof n.maxDistance?n.maxDistance:r._maxDistance,panningModel:"undefined"!=typeof n.panningModel?n.panningModel:r._panningModel,refDistance:"undefined"!=typeof n.refDistance?n.refDistance:r._refDistance,rolloffFactor:"undefined"!=typeof n.rolloffFactor?n.rolloffFactor:r._rolloffFactor})}else 2===i.length&&(n=i[0],t=parseInt(i[1],10));for(var a=r._getSoundIds(t),p=0;p<a.length;p++)if(o=r._soundById(a[p])){var l=o._pannerAttr;l={coneInnerAngle:"undefined"!=typeof n.coneInnerAngle?n.coneInnerAngle:l.coneInnerAngle,coneOUterAngle:"undefined"!=typeof n.coneOUterAngle?n.coneOUterAngle:l.coneOUterAngle,coneOuterGain:"undefined"!=typeof n.coneOuterGain?n.coneOuterGain:l.coneOuterGain,distanceModel:"undefined"!=typeof n.distanceModel?n.distanceModel:l.distanceModel,maxDistance:"undefined"!=typeof n.maxDistance?n.maxDistance:l.maxDistance,panningModel:"undefined"!=typeof n.panningModel?n.panningModel:l.panningModel,refDistance:"undefined"!=typeof n.refDistance?n.refDistance:l.refDistance,rolloffFactor:"undefined"!=typeof n.rolloffFactor?n.rolloffFactor:l.rolloffFactor};var c=o._panner;c?(c.coneInnerAngle=l.coneInnerAngle,c.coneOUterAngle=l.coneOUterAngle,c.coneOuterGain=l.coneOuterGain,c.distanceModel=l.distanceModel,c.maxDistance=l.maxDistance,c.panningModel=l.panningModel,c.refDistance=l.refDistance,c.rolloffFactor=l.rolloffFactor):(o._pos||(o._pos=r._pos||[0,0,-.5]),e(o))}return r},Sound.prototype.init=function(e){return function(){var n=this,t=n._parent;n._orientation=t._orientation,n._pos=t._pos,n._velocity=t._velocity,n._pannerAttr=t._pannerAttr,e.call(this),n._pos&&t.pos(n._pos[0],n._pos[1],n._pos[2],n._id)}}(Sound.prototype.init),Sound.prototype.reset=function(e){return function(){var n=this,t=n._parent;return n._orientation=t._orientation,n._pos=t._pos,n._velocity=t._velocity,n._pannerAttr=t._pannerAttr,e.call(this)}}(Sound.prototype.reset);var e=function(e){e._panner=Howler.ctx.createPanner(),e._panner.coneInnerAngle=e._pannerAttr.coneInnerAngle,e._panner.coneOUterAngle=e._pannerAttr.coneOUterAngle,e._panner.coneOuterGain=e._pannerAttr.coneOuterGain,e._panner.distanceModel=e._pannerAttr.distanceModel,e._panner.maxDistance=e._pannerAttr.maxDistance,e._panner.panningModel=e._pannerAttr.panningModel,e._panner.refDistance=e._pannerAttr.refDistance,e._panner.rolloffFactor=e._pannerAttr.rolloffFactor,e._panner.setPosition(e._pos[0],e._pos[1],e._pos[2]),e._panner.setOrientation(e._orientation[0],e._orientation[1],e._orientation[2]),e._panner.setVelocity(e._velocity[0],e._velocity[1],e._velocity[2]),e._panner.connect(e._node),e._paused||e._parent.pause(e._id).play(e._id)}}();
-},{}],23:[function(_dereq_,module,exports){
+},{}],25:[function(_dereq_,module,exports){
 // stats.js - http://github.com/mrdoob/stats.js
 var Stats=function(){function f(a,e,b){a=document.createElement(a);a.id=e;a.style.cssText=b;return a}function l(a,e,b){var c=f("div",a,"padding:0 0 3px 3px;text-align:left;background:"+b),d=f("div",a+"Text","font-family:Helvetica,Arial,sans-serif;font-size:9px;font-weight:bold;line-height:15px;color:"+e);d.innerHTML=a.toUpperCase();c.appendChild(d);a=f("div",a+"Graph","width:74px;height:30px;background:"+e);c.appendChild(a);for(e=0;74>e;e++)a.appendChild(f("span","","width:1px;height:30px;float:left;opacity:0.9;background:"+
 b));return c}function m(a){for(var b=c.children,d=0;d<b.length;d++)b[d].style.display=d===a?"block":"none";n=a}function p(a,b){a.appendChild(a.firstChild).style.height=Math.min(30,30-30*b)+"px"}var q=self.performance&&self.performance.now?self.performance.now.bind(performance):Date.now,k=q(),r=k,t=0,n=0,c=f("div","stats","width:80px;opacity:0.9;cursor:pointer");c.addEventListener("mousedown",function(a){a.preventDefault();m(++n%c.children.length)},!1);var d=0,u=Infinity,v=0,b=l("fps","#0ff","#002"),
 A=b.children[0],B=b.children[1];c.appendChild(b);var g=0,w=Infinity,x=0,b=l("ms","#0f0","#020"),C=b.children[0],D=b.children[1];c.appendChild(b);if(self.performance&&self.performance.memory){var h=0,y=Infinity,z=0,b=l("mb","#f08","#201"),E=b.children[0],F=b.children[1];c.appendChild(b)}m(n);return{REVISION:14,domElement:c,setMode:m,begin:function(){k=q()},end:function(){var a=q();g=a-k;w=Math.min(w,g);x=Math.max(x,g);C.textContent=(g|0)+" MS ("+(w|0)+"-"+(x|0)+")";p(D,g/200);t++;if(a>r+1E3&&(d=Math.round(1E3*
 t/(a-r)),u=Math.min(u,d),v=Math.max(v,d),A.textContent=d+" FPS ("+u+"-"+v+")",p(B,d/100),r=a,t=0,void 0!==h)){var b=performance.memory.usedJSHeapSize,c=performance.memory.jsHeapSizeLimit;h=Math.round(9.54E-7*b);y=Math.min(y,h);z=Math.max(z,h);E.textContent=h+" MB ("+y+"-"+z+")";p(F,b/c)}return a},update:function(){k=this.end()}}};"object"===typeof module&&(module.exports=Stats);
 
-},{}]},{},[14])
-(14)
+},{}]},{},[15])
+(15)
 });

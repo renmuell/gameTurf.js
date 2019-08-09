@@ -45,23 +45,21 @@ var world = {
      *  @param {} 
      */
   , collsitionDetection: function(
-      hitbox
-    , moveDirectionVector
-    , isBounce
+      timeElapsed
+    , physics
     ){  
       return worldCollsitionDetection.collsitionDetection(
-        world.mapWithTileTypes
+        timeElapsed
+      , world.mapWithTileTypes
       , world.worldWith
       , world.wolrdHeight
-      , hitbox
-      , moveDirectionVector
-      , isBounce)
+      , physics)
     }
 
     /**
      *
      */
-  , draw: function() {
+  , draw: function(timeElapsed) {
       tilesHelper.drawTiles(
         world.mapWithTileTypes
       , world.worldWith

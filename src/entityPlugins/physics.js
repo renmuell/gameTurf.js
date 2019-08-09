@@ -9,10 +9,12 @@
 /*global require, module */
 
 var util      = require('./../core/util')
+var ui      = require('./../core/ui')
 var world     = require('./../systems/world')
 var settings  = require('./../core/settings')
 var theatre   = require('./../core/theatre')
 var entityManager = require('./../managers/entityManager')
+var physicsHelper = require('./../helpers/physicsHelper')
 
 module.exports = function(config){
 
@@ -20,8 +22,7 @@ module.exports = function(config){
 
   var physics = {
 
-      x                 : config.x                 || 0
-    , y                 : config.y                 || 0
+      position          : config.position          || { x:0, y:0 }
     , velocity          : config.velocity          || { x:0, y:0 }
     , speed             : config.speed             || 2
     , runSpeed          : config.runSpeed          || 4
@@ -93,7 +94,7 @@ module.exports = function(config){
         }
       }
 
-    , update: function(input){
+    , update: function(timeElapsed, input){
         physics.isMoving    = false
         physics.collsition  = false
 
@@ -104,7 +105,7 @@ module.exports = function(config){
 
           physics.isMoving = true
 
-          physics.collsition = physics.collsitionDetection()
+          physics.collsition = physics.collsitionDetection(timeElapsed)
 
           if (physics.objectCollision) {
 
@@ -121,10 +122,10 @@ module.exports = function(config){
               var hitBox = physics.getHitBox()
               var entityHitBox  = entity.physics.getHitBox()
         
-              var objectIsLeft  = physics.x > entity.physics.x && hitBox.Left   < entityHitBox.Right
-              , objectIsRight   = physics.x < entity.physics.x && hitBox.Right  > entityHitBox.Left
-              , objectIsUp      = physics.y > entity.physics.y && hitBox.Top    < entityHitBox.Bottom
-              , objectIsDown    = physics.y < entity.physics.y && hitBox.Bottom > entityHitBox.Top
+              var objectIsLeft  = physics.position.x > entity.physics.position.x && hitBox.Left   < entityHitBox.Right
+              , objectIsRight   = physics.position.x < entity.physics.position.x && hitBox.Right  > entityHitBox.Left
+              , objectIsUp      = physics.position.y > entity.physics.position.y && hitBox.Top    < entityHitBox.Bottom
+              , objectIsDown    = physics.position.y < entity.physics.position.y && hitBox.Bottom > entityHitBox.Top
 
               if (objectIsRight && physics.velocity.x > 0) physics.velocity.x = 0
               if (objectIsLeft  && physics.velocity.x < 0) physics.velocity.x = 0
@@ -133,9 +134,14 @@ module.exports = function(config){
             }
           }
 
-          physics.x += physics.velocity.x
-          physics.y += physics.velocity.y
+          physics.position = physics.calculateFuturePositionOf(physics.position, timeElapsed)
         }
+      }
+
+    , calculateFuturePositionOf: function (position, timeElapsed) {
+        position.x += physicsHelper.calculateVelocityForTime(timeElapsed, physics.velocity.x)
+        position.y += physicsHelper.calculateVelocityForTime(timeElapsed, physics.velocity.y)
+        return position
       }
 
     , draw: function(){
@@ -159,13 +165,13 @@ module.exports = function(config){
       }
 
     , getHitBox: function() {
-        physics.hitBox.centerPosition.x = physics.x
-        physics.hitBox.centerPosition.y = physics.y
+        physics.hitBox.centerPosition.x = physics.position.x
+        physics.hitBox.centerPosition.y = physics.position.y
 
-        physics.hitBox.Left   = physics.x - physics.halfWidth
-        physics.hitBox.Right  = physics.x + physics.halfWidth
-        physics.hitBox.Bottom = physics.y + physics.halfHeight
-        physics.hitBox.Top    = physics.y - physics.halfHeight
+        physics.hitBox.Left   = physics.position.x - physics.halfWidth
+        physics.hitBox.Right  = physics.position.x + physics.halfWidth
+        physics.hitBox.Bottom = physics.position.y + physics.halfHeight
+        physics.hitBox.Top    = physics.position.y - physics.halfHeight
 
         physics.hitBox.points[0].x = physics.hitBox.Left
         physics.hitBox.points[0].y = physics.hitBox.Top
@@ -182,12 +188,11 @@ module.exports = function(config){
         return physics.hitBox
       }
 
-    , collsitionDetection: function(){
+    , collsitionDetection: function(timeElapsed){
         if (physics.canWorldColide) {
           return world.collsitionDetection(
-            physics.getHitBox()
-          , physics.velocity
-          , physics.isBounce)
+            timeElapsed
+          , physics)
         }
         return false
       }

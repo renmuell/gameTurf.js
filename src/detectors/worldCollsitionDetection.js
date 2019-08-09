@@ -12,6 +12,7 @@ var tilesHelper = require('./../helpers/tilesHelper')
 var theatre     = require('./../core/theatre')
 var sound       = require('./../core/sound')
 var settings    = require('./../core/settings')
+var physicsHelper = require('./../helpers/physicsHelper')
 
 /**
  *  
@@ -32,12 +33,13 @@ var worldCollsitionDetection = {
      *  
      */ 
   , collsitionDetection: function(
-      mapWithTileTypes
+      timeElapsed
+    , mapWithTileTypes
     , worldWith
     , wolrdHeight
-    , hitbox
-    , velocity
-    , isBounce){
+    , physics){
+
+      var hitbox = physics.getHitBox();
 
       tilesHelper.calculateNeahrestTileWalls(
         mapWithTileTypes
@@ -51,10 +53,10 @@ var worldCollsitionDetection = {
         if (tilesHelper.neahrestTileWalls[tileNr]) {
           for (var tileWallNr = tilesHelper.neahrestTileWalls[tileNr].length - 1; tileWallNr >= 0; tileWallNr--) {
             colide = worldCollsitionDetection.calculateWallCollsitionDenfung(
-                      tilesHelper.neahrestTileWalls[tileNr][tileWallNr]
-                      , hitbox
-                      , velocity
-                      , isBounce) || colide
+                timeElapsed
+              , tilesHelper.neahrestTileWalls[tileNr][tileWallNr]
+              , physics
+              , hitbox) || colide
           }
         }
       }
@@ -66,22 +68,29 @@ var worldCollsitionDetection = {
      *  
      */ 
   , calculateWallCollsitionDenfung: function(
-      wall
-    , hitbox
-    , velocity
-    , isBounce) {
+      timeElapsed
+    , wall
+    , physics
+    , hitbox) {
 
       for (var i = hitbox.points.length - 1; i >= 0; i--) {
+
+        var hitboxPoint = hitbox.points[i];
+        
+        var hitboxPointFuturePosition = physics.calculateFuturePositionOf({
+            x: hitboxPoint.x
+          , y: hitboxPoint.y
+        }, timeElapsed);
 
         if(worldCollsitionDetection.checkLineIntersectionFast(
               wall[0].x
             , wall[0].y
             , wall[1].x
             , wall[1].y
-            , hitbox.points[i].x
-            , hitbox.points[i].y
-            , hitbox.points[i].x + velocity.x
-            , hitbox.points[i].y + velocity.y)){
+            , hitboxPoint.x
+            , hitboxPoint.y
+            , hitboxPointFuturePosition.x
+            , hitboxPointFuturePosition.y)){
 
           if (settings.debugWorldCollisions) {
             worldCollsitionDetection.debugCollisionLine(
@@ -105,17 +114,17 @@ var worldCollsitionDetection = {
             wallIsDown  = wallIsDown  && (wall[0].y > hitbox.points[y].y && wall[1].y > hitbox.points[y].y)
           }
 
-          if (isBounce) {
+          if (physics.isBounce) {
 
-            if (wallIsRight && velocity.x > 0) velocity.x = -velocity.x
-            if (wallIsLeft  && velocity.x < 0) velocity.x = -velocity.x
-            if (wallIsDown  && velocity.y > 0) velocity.y = -velocity.y
-            if (wallIsUp    && velocity.y < 0) velocity.y = -velocity.y
+            if (wallIsRight && physics.velocity.x > 0) physics.velocity.x = -physics.velocity.x
+            if (wallIsLeft  && physics.velocity.x < 0) physics.velocity.x = -physics.velocity.x
+            if (wallIsDown  && physics.velocity.y > 0) physics.velocity.y = -physics.velocity.y
+            if (wallIsUp    && physics.velocity.y < 0) physics.velocity.y = -physics.velocity.y
 
           } else {
 
-            if (wallIsRight || wallIsLeft) velocity.x = 0
-            if (wallIsDown  || wallIsUp)   velocity.y = 0
+            if (wallIsRight || wallIsLeft) physics.velocity.x = 0
+            if (wallIsDown  || wallIsUp)   physics.velocity.y = 0
 
           }
 
@@ -153,7 +162,7 @@ var worldCollsitionDetection = {
     /**
      *  
      */ 
-  , update: function(){
+  , update: function(timeElapsed){
       if(settings.debugWorldCollisions) {
         worldCollsitionDetection.collsitions = []
         worldCollsitionDetection.checkLines  = []
@@ -163,7 +172,7 @@ var worldCollsitionDetection = {
     /**
      *  
      */ 
-  , draw: function(){
+  , draw: function(timeElapsed){
       if(settings.debugWorldCollisions) {
         theatre.drawMultipleLines('stage', worldCollsitionDetection.checkLines, "#F24962")
         theatre.drawMultipleLines('stage', worldCollsitionDetection.collsitions, "blue")

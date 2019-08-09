@@ -12,14 +12,17 @@ var theatre       = require('./../core/theatre')
 var Physics       = require('./../entityPlugins/physics')
 var LastPositions = require('./../entityPlugins/lastPositions')
 var sound         = require('./../core/sound')
+var physicsHelper = require('./../helpers/physicsHelper')
 
 var WindParticleFactory = function(){
 
   var WindParticle = {
     
       physics: Physics({
-        x              : 0
-      , y              : 0
+        position: {
+          x : 0
+        , y : 0
+        }
       , height         : 5
       , width          : 5
       , canWorldColide : false
@@ -44,11 +47,11 @@ var WindParticleFactory = function(){
         WindParticle.createdTime = Date.now()
         WindParticle.isAlive     = true
         sound.playEffect('wind')
-        WindParticle.physics.x = theatre.canvasBoxLeft + (Math.random() * theatre.stageCanvas.width)
-        WindParticle.physics.y = theatre.canvasBoxTop  + (Math.random() * theatre.stageCanvas.height)
+        WindParticle.physics.position.x = theatre.canvasBoxLeft + (Math.random() * theatre.stageCanvas.width)
+        WindParticle.physics.position.y = theatre.canvasBoxTop  + (Math.random() * theatre.stageCanvas.height)
       }
 
-    , update: function(windDirection, windSpeed){
+    , update: function(timeElapsed, windDirection, windSpeed){
 
         var currentLifeTime = Date.now() - WindParticle.createdTime
 
@@ -70,14 +73,16 @@ var WindParticleFactory = function(){
 
           WindParticle.physics.speed = windSpeed
 
-          WindParticle.movementDirectionData.vector.x = Math.random() - 0.5 + windDirection.x
-          WindParticle.movementDirectionData.vector.y = Math.random() - 0.5 + windDirection.y
+          
+          WindParticle.movementDirectionData.vector.x = (Math.random() - 0.5 + windDirection.x)
+          WindParticle.movementDirectionData.vector.y = (Math.random() - 0.5 + windDirection.y)
 
-          WindParticle.physics.update(WindParticle.movementDirectionData)
+          WindParticle.physics.update(timeElapsed, WindParticle.movementDirectionData)
         }
       }
 
-      , draw: function(){
+      , draw: function(timeElapsed){
+
         WindParticle.lastPositions.draw(WindParticle.physics)
         /*
         var currentLifeTime = Date.now() - WindParticle.createdTime

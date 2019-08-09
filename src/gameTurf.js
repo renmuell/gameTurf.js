@@ -4,6 +4,8 @@
  * 
  *****************************************************************************/
 
+"use strict";
+
 (function() {
 
 /*global require, module */
@@ -22,6 +24,7 @@ module.exports = {
 ,   wind     : require('./systems/wind')
 ,   math     : require('./core/math')
 ,   world    :  require('./systems/world')
+,   interaction: require('./entityPlugins/interaction')
 ,   lastPositions : require('./entityPlugins/lastPositions')
 ,   entityManager : require('./managers/entityManager')
 ,   entityCollisionDetection : require('./detectors/entityCollisionDetection')

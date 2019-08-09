@@ -25,13 +25,13 @@ var wind = {
     }
 
   , incluenceEntityPhysic: function(physics, moveDirectionVector){
-      if (Math.random() > 0.95) {
-        moveDirectionVector.x += (wind.windDirection.x * (1 / physics.mass)) / 100
-        moveDirectionVector.y += (wind.windDirection.y * (1 / physics.mass)) / 100
+      if (Math.random() > 0.5) {
+        moveDirectionVector.x += (wind.windDirection.x * (1 / physics.mass)) / 1000
+        moveDirectionVector.y += (wind.windDirection.y * (1 / physics.mass)) / 1000
       }
     }
 
-  , update: function(){
+  , update: function(timeElapsed){
 
       if (Math.random()>0.995){
         wind.windSpeed = (Math.random() * 9) + 1
@@ -54,15 +54,15 @@ var wind = {
 
       for (var i = 0; i < wind.maxAliveWindPartiles; i++){
         if (wind.windParticles[i].isAlive){
-          wind.windParticles[i].update(wind.windDirection, wind.windSpeed)
+          wind.windParticles[i].update(timeElapsed, wind.windDirection, wind.windSpeed)
         }
       }
     }
 
-  , draw: function(){
+  , draw: function(timeElapsed){
       for (var i = 0; i < wind.maxAliveWindPartiles; i++){
         if (wind.windParticles[i].isAlive){
-          wind.windParticles[i].draw()
+          wind.windParticles[i].draw(timeElapsed)
         }
       }
     }

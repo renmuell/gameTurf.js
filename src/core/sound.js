@@ -44,9 +44,9 @@ var sound = {
          && settings.backgroundSong.src) {
          
           sound.backgroundSong = new Howl({
-              src   : [setting.backgroundSong.src]
+              src   : [settings.backgroundSong.src]
             , loop  : true
-            , volume: setting.backgroundSong.volume
+            , volume: settings.backgroundSong.volume
           })
         }
       }
