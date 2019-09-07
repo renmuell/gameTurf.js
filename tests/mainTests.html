@@ -1,0 +1,56 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>QUnit Example</title>
+  <link rel="stylesheet" href="../node_modules/qunit/qunit/qunit.css">
+</head>
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture">
+    <div id="Menu">
+        <h2>Menu</h2>
+        <ul>
+          <li><button id="continue">Go</button></li>
+        </ul>
+        <!--button id="goFS">Start<button-->
+      </div>
+    
+      <div id="bg">
+        <header>Sense2d</header>
+      </div>
+    
+      <div id="gameCanvasContainer">
+        <div id="Water-Container">
+          <div id="Water" class="rotating"></div>
+        </div>
+        <div id="output"></div>
+        <canvas id="Backdrop"></canvas>
+        <canvas id="Grid"></canvas>
+        <canvas id="Stage"></canvas>
+        <canvas id="Foreground"></canvas>
+      </div>
+      
+  </div>
+  <script src="../node_modules/qunit/qunit/qunit.js"></script>
+  <script src="../build/gameTurf.js"></script>
+  <script>
+    if (!Object.prototype.assign) {
+        Object.prototype.assign = function() {
+            var args = [].slice.call(arguments),
+                target = args.shift();
+
+            return args.reduce(function(base, obj) {
+                Object.keys(obj).forEach(function(prop) {
+                    if (obj.hasOwnProperty(prop)) {
+                        base[prop] = obj[prop];
+                    }
+                });
+                return base;
+            }, target);
+        }
+    }
+    </script>
+  <script src="mainTests.js"></script>
+</body>
+</html>

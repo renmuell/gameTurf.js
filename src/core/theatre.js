@@ -1,8 +1,8 @@
-/******************************************************************************
+/**
  * theatre.js
  *
- * 
- *****************************************************************************/
+ * @package gameturfjs
+ */
 
 (function() {
 
@@ -24,7 +24,10 @@ var theatre = {
   , backdropCanvas       : undefined
   , backdrop             : undefined
 
-  , scale                : 4
+  , foregroundCanvas     : undefined
+  , foreground           : undefined
+
+  , scale                : 2
 
   , canvasBoxLeft        : 0
   , canvasBoxTop         : 0
@@ -34,10 +37,10 @@ var theatre = {
   , shakeDuration        : 50
   , shakeStartTime       : -1
   , allowScreenShake     : false
-  , scrrenShakeMagnitude : 5
+  , screenShakeMagnitude : 5
 
-  , useResolutionDevider : true
-  , resolutionDevider    : 2
+  , useResolutionDivider : false
+  , resolutionDivider    : 2
   , movesWithPlayer      : false
 
   , currentTranslateX    : 0
@@ -45,11 +48,8 @@ var theatre = {
 
   , worldNeedsRedraw     : true
 
-    , canvasHeight         : window.innerHeight
-    , canvasWidth          : window.innerWidth
-
-  //, canvasHeight         : 400
-  //, canvasWidth          : 400
+  , canvasHeight         : window.innerHeight
+  , canvasWidth          : window.innerWidth
 
     /**
      *  
@@ -67,6 +67,9 @@ var theatre = {
       theatre.backdropCanvas  = document.getElementById('Backdrop')
       theatre.backdrop        = theatre.backdropCanvas.getContext('2d')
 
+      theatre.foregroundCanvas  = document.getElementById('Foreground')
+      theatre.foreground        = theatre.foregroundCanvas.getContext('2d')
+
       theatre.waterCanvas              = document.getElementById('Water-Container')
       theatre.waterCanvas.style.width  = theatre.canvasWidth  + "px"
       theatre.waterCanvas.style.height = theatre.canvasHeight + "px"
@@ -83,6 +86,7 @@ var theatre = {
       theatre.setSize(theatre.stageCanvas)
       theatre.setSize(theatre.gridCanvas)
       theatre.setSize(theatre.backdropCanvas)
+      theatre.setSize(theatre.foregroundCanvas)
     }
 
     /**
@@ -90,14 +94,14 @@ var theatre = {
      */ 
   , setSize: function(canvas){
 
-      if (theatre.useResolutionDevider) {
+      if (theatre.useResolutionDivider) {
 
         canvas.className += " scaleCanvas"
-        canvas.width      = theatre.canvasWidth  / theatre.resolutionDevider
-        canvas.height     = theatre.canvasHeight / theatre.resolutionDevider
+        canvas.width      = theatre.canvasWidth / theatre.resolutionDivider
+        canvas.height     = theatre.canvasHeight  / theatre.resolutionDivider
         canvas.style.transformOrigin = "0% 0%"
         canvas.style.transform 
-          = "scale(" + theatre.resolutionDevider + ", " + theatre.resolutionDevider + ")"
+          = "scale(" + theatre.resolutionDivider + ", " + theatre.resolutionDivider + ")"
 
       } else {
 
@@ -106,8 +110,8 @@ var theatre = {
 
         theatre.canvasBoxLeft   = 0
         theatre.canvasBoxTop    = 0
-        theatre.canvasBoxBottom = canvas.height
-        theatre.canvasBoxRight  = canvas.width
+        theatre.canvasBoxBottom = theatre.canvasHeight
+        theatre.canvasBoxRight  = theatre.canvasWidth
       }
     }
 
@@ -118,6 +122,7 @@ var theatre = {
       theatre.stage.scale(theatre.scale,theatre.scale)
       theatre.grid.scale(theatre.scale,theatre.scale)
       theatre.backdrop.scale(theatre.scale,theatre.scale)
+      theatre.foreground.scale(theatre.scale,theatre.scale)
     }
 
     /**
@@ -134,18 +139,24 @@ var theatre = {
       }
 
       theatre.stage.clearRect(
-        theatre.canvasBoxLeft
-      , theatre.canvasBoxTop
-      , theatre.canvasBoxRight  - theatre.canvasBoxLeft
-      , theatre.canvasBoxBottom - theatre.canvasBoxTop)
+        theatre.canvasBoxLeft* theatre.scale
+      , theatre.canvasBoxTop* theatre.scale
+      , theatre.canvasWidth* theatre.scale
+      , theatre.canvasHeight* theatre.scale)
       
       if (theatre.movesWithPlayer) {
 
         theatre.backdrop.clearRect(
-          theatre.canvasBoxLeft
-        , theatre.canvasBoxTop
-        , theatre.canvasBoxRight  - theatre.canvasBoxLeft
-        , theatre.canvasBoxBottom - theatre.canvasBoxTop)
+          theatre.canvasBoxLeft* theatre.scale
+        , theatre.canvasBoxTop* theatre.scale
+        ,  theatre.canvasWidth* theatre.scale
+        , theatre.canvasHeight* theatre.scale)
+
+        theatre.foreground.clearRect(
+          theatre.canvasBoxLeft* theatre.scale
+        , theatre.canvasBoxTop* theatre.scale
+        ,  theatre.canvasWidth* theatre.scale
+        , theatre.canvasHeight* theatre.scale)
 
         //theatre.stage.restore()
         //theatre.backdrop.restore()
@@ -157,10 +168,16 @@ var theatre = {
      */ 
   , clearWorld: function(){
       theatre.backdrop.clearRect(
-        theatre.canvasBoxLeft
-      , theatre.canvasBoxTop
-      , theatre.canvasBoxRight
-      , theatre.canvasBoxBottom)
+        theatre.canvasBoxLeft* theatre.scale
+      , theatre.canvasBoxTop* theatre.scale
+      , theatre.canvasBoxRight* theatre.scale
+      , theatre.canvasBoxBottom* theatre.scale)
+
+      theatre.foreground.clearRect(
+        theatre.canvasBoxLeft* theatre.scale
+      , theatre.canvasBoxTop* theatre.scale
+      , theatre.canvasBoxRight* theatre.scale
+      , theatre.canvasBoxBottom* theatre.scale)
     }
 
     /**
@@ -201,11 +218,13 @@ var theatre = {
 
         theatre.stage.save()
         theatre.backdrop.save()
+        theatre.foreground.save()
 
-        var dx = Math.random() * theatre.scrrenShakeMagnitude
-        var dy = Math.random() * theatre.scrrenShakeMagnitude
+        var dx = (Math.random() * theatre.screenShakeMagnitude) * theatre.scale
+        var dy = (Math.random() * theatre.screenShakeMagnitude) * theatre.scale
         theatre.stage.translate(dx, dy)
         theatre.backdrop.translate(dx, dy)
+        theatre.foreground.translate(dx, dy)
       }
     }
 
@@ -219,6 +238,7 @@ var theatre = {
         }
         theatre.stage.restore()
         theatre.backdrop.restore()
+        theatre.foreground.restore()
       }
     }
 
@@ -237,57 +257,68 @@ var theatre = {
   , playerUpdate: function(physics){
       if (theatre.movesWithPlayer){
 
-        var posX = (theatre.stageCanvas.width  / 2) - physics.position.x
-        var posY = (theatre.stageCanvas.height / 2) - physics.position.y
+        var widthHalf  = theatre.canvasWidth / 2;
+        var heightHalf = theatre.canvasHeight / 2;
+   
+        var playerX = physics.position.x * theatre.scale;
+        var playerY = physics.position.y * theatre.scale;
 
-        theatre.stage.setTransform(1, 0, 0, 1, posX, posY)
-        theatre.backdrop.setTransform(1, 0, 0, 1, posX, posY)
+        var posX = playerX - widthHalf;
+        var posY = playerY - heightHalf;
 
-        theatre.canvasBoxLeft   = physics.position.x - (theatre.stageCanvas.width  / 2)
-        theatre.canvasBoxRight  = physics.position.x + (theatre.stageCanvas.width  / 2)
-        theatre.canvasBoxTop    = physics.position.y - (theatre.stageCanvas.height / 2)
-        theatre.canvasBoxBottom = physics.position.y + (theatre.stageCanvas.height / 2)
+        theatre.stage.setTransform(1, 0, 0, 1, posX*-1, posY*-1);
+        theatre.backdrop.setTransform(1, 0, 0, 1, posX*-1, posY*-1);
+        theatre.foreground.setTransform(1, 0, 0, 1, posX*-1, posY*-1);
 
-        theatre.worldNeedsRedraw = true
+        theatre.canvasBoxLeft   = physics.position.x - (widthHalf/theatre.scale);
+        theatre.canvasBoxRight  = physics.position.x + (widthHalf/theatre.scale);
+        theatre.canvasBoxTop    = physics.position.y - (heightHalf/theatre.scale);
+        theatre.canvasBoxBottom = physics.position.y + (heightHalf/theatre.scale);
+        
+        theatre.worldNeedsRedraw = true;
       
       } else {
 
-        if (physics.position.x < theatre.canvasBoxLeft) {
+        if ((physics.position.x * theatre.scale) < theatre.canvasBoxLeft) {
           
           theatre.currentTranslateX  += theatre.canvasWidth
           theatre.stage.setTransform(1,0,0,1, theatre.currentTranslateX, theatre.currentTranslateY)
           theatre.backdrop.setTransform(1,0,0,1,theatre.currentTranslateX, theatre.currentTranslateY)
+          theatre.foreground.setTransform(1,0,0,1,theatre.currentTranslateX, theatre.currentTranslateY)
           theatre.canvasBoxLeft   -= theatre.canvasWidth
           theatre.canvasBoxRight  -= theatre.canvasWidth
           theatre.worldNeedsRedraw = true
           // translate left
         
-        } else if (physics.position.x > theatre.canvasBoxRight){
+        } else if ((physics.position.x * theatre.scale) > theatre.canvasBoxRight){
           
           // translate right
           theatre.currentTranslateX  -= theatre.canvasWidth
           theatre.stage.setTransform(1,0,0,1, theatre.currentTranslateX, theatre.currentTranslateY)
           theatre.backdrop.setTransform(1,0,0,1,theatre.currentTranslateX, theatre.currentTranslateY)
+          theatre.foreground.setTransform(1,0,0,1,theatre.currentTranslateX, theatre.currentTranslateY)
           theatre.canvasBoxLeft   += theatre.canvasWidth
           theatre.canvasBoxRight  += theatre.canvasWidth
           theatre.worldNeedsRedraw = true
 
-        } else if (physics.position.y < theatre.canvasBoxTop){
+        } else if ((physics.position.y * theatre.scale) < theatre.canvasBoxTop){
           
           // translate top
           theatre.currentTranslateY  += theatre.canvasHeight
           theatre.stage.setTransform(1,0,0,1, theatre.currentTranslateX, theatre.currentTranslateY)
           theatre.backdrop.setTransform(1,0,0,1,theatre.currentTranslateX, theatre.currentTranslateY)
+          theatre.foreground.setTransform(1,0,0,1,theatre.currentTranslateX, theatre.currentTranslateY)
           theatre.canvasBoxTop    -= theatre.canvasHeight
           theatre.canvasBoxBottom -= theatre.canvasHeight
           theatre.worldNeedsRedraw = true
 
-        } else if (physics.position.y > theatre.canvasBoxBottom){
+        } else if ((physics.position.y * theatre.scale) > theatre.canvasBoxBottom){
           
           // translate bottom
           theatre.currentTranslateY  -= theatre.canvasHeight
           theatre.stage.setTransform(1,0,0,1, theatre.currentTranslateX, theatre.currentTranslateY)
           theatre.backdrop.setTransform(1,0,0,1,theatre.currentTranslateX, theatre.currentTranslateY)
+          theatre.foreground.setTransform(1,0,0,1,theatre.currentTranslateX, theatre.currentTranslateY)
           theatre.canvasBoxTop    += theatre.canvasHeight
           theatre.canvasBoxBottom += theatre.canvasHeight
           theatre.worldNeedsRedraw = true
@@ -300,8 +331,10 @@ var theatre = {
      */ 
   , drawGrid: function(lineWidth, gap, color){
 
-      var width  = theatre.gridCanvas.width
-      var height = theatre.gridCanvas.height
+      gap *= theatre.scale
+
+      var width  = theatre.gridCanvas.width * theatre.scale
+      var height = theatre.gridCanvas.height * theatre.scale
 
       theatre.grid.beginPath()
 
@@ -316,36 +349,36 @@ var theatre = {
       }
 
       theatre.grid.strokeStyle = color
-      theatre.grid.lineWidth   = lineWidth
+      theatre.grid.lineWidth   = lineWidth * theatre.scale
       theatre.grid.stroke()
     }
 
     /**
      *  
      */ 
-  , drawTrianlgeFromCenter: function(canvas, physics, color){
+  , drawTriangleFromCenter: function(canvas, physics, color){
 
       if (theatre.isOutsideOfCanvas(
-            physics.position.x + physics.halfWidth
-          , physics.position.x - physics.halfWidth
-          , physics.position.y - physics.halfHeight
-          , physics.position.y + physics.halfHeight)){
+            (physics.position.x + physics.halfWidth)
+          , (physics.position.x - physics.halfWidth) 
+          , (physics.position.y - physics.halfHeight) 
+          , (physics.position.y + physics.halfHeight))){
         return;
       }
 
       theatre[canvas].beginPath()
       theatre[canvas].moveTo(
-        Math.floor(physics.position.x)
-      , Math.floor(physics.position.y - physics.halfHeight))
+        Math.floor(physics.position.x) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale)
       theatre[canvas].lineTo(
-        Math.floor(physics.position.x - physics.halfWidth)
-      , Math.floor(physics.position.y + physics.halfHeight))
+        Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale)
       theatre[canvas].lineTo(
-        Math.floor(physics.position.x + physics.halfWidth)
-      , Math.floor(physics.position.y + physics.halfHeight))
+        Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale)
       theatre[canvas].lineTo(
-        Math.floor(physics.position.x)
-      , Math.floor(physics.position.y - physics.halfHeight))
+        Math.floor(physics.position.x) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale)
 
       theatre[canvas].fillStyle = color
       theatre[canvas].fill()
@@ -354,30 +387,30 @@ var theatre = {
     /**
      *  
      */ 
-  , drawTrianlgeFromCenterUpsideDown: function(canvas, physics, color){
+  , drawTriangleFromCenterUpsideDown: function(canvas, physics, color){
 
       if (theatre.isOutsideOfCanvas(
-            physics.position.x + physics.halfWidth
-          , physics.position.x - physics.halfWidth
-          , physics.position.y - physics.halfHeight
-          , physics.position.y + physics.halfHeight)){
+            (physics.position.x + physics.halfWidth) 
+          , (physics.position.x - physics.halfWidth) 
+          , (physics.position.y - physics.halfHeight) 
+          , (physics.position.y + physics.halfHeight))){
         return;
       }
 
       theatre[canvas].beginPath()
 
       theatre[canvas].moveTo(
-        Math.floor(physics.position.x)
-      , Math.floor(physics.position.y + physics.halfHeight))
+        Math.floor(physics.position.x) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale)
       theatre[canvas].lineTo(
-        Math.floor(physics.position.x - physics.halfWidth)
-      , Math.floor(physics.position.y - physics.halfHeight))
+        Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale)
       theatre[canvas].lineTo(
-        Math.floor(physics.position.x + physics.halfWidth)
-      , Math.floor(physics.position.y - physics.halfHeight))
+        Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale)
       theatre[canvas].lineTo(
-        Math.floor(physics.position.x)
-      , Math.floor(physics.position.y + physics.halfHeight))
+        Math.floor(physics.position.x) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale)
 
       theatre[canvas].fillStyle = color
       theatre[canvas].fill()
@@ -389,40 +422,149 @@ var theatre = {
   , drawSquareFromCenter: function(canvas, physics, color){
 
       if (theatre.isOutsideOfCanvas(
-            physics.position.x + physics.halfWidth
-          , physics.position.x - physics.halfWidth
-          , physics.position.y - physics.halfHeight
-          , physics.position.y + physics.halfHeight)){
+            (physics.position.x + physics.halfWidth) 
+          , (physics.position.x - physics.halfWidth) 
+          , (physics.position.y - physics.halfHeight) 
+          , (physics.position.y + physics.halfHeight))){
         return;
       }
 
       theatre[canvas].fillStyle = color
       theatre[canvas].fillRect(
-        Math.floor(physics.position.x - physics.halfWidth)
-      , Math.floor(physics.position.y - physics.halfHeight)
-      , physics.width
-      , physics.height)
+        Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale
+      , physics.width * theatre.scale
+      , physics.height * theatre.scale)
     }
   
+    /**
+     *  
+     */ 
+    , drawCurvedSquareFromCenter: function(canvas, physics, color, offset){
+
+      if (theatre.isOutsideOfCanvas(
+            (physics.position.x + physics.halfWidth) 
+          , (physics.position.x - physics.halfWidth) 
+          , (physics.position.y - physics.halfHeight) 
+          , (physics.position.y + physics.halfHeight))){
+        return;
+      }
+
+      theatre[canvas].fillStyle = color
+
+      theatre[canvas].beginPath()
+      theatre[canvas].moveTo(
+        Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale
+      )
+      theatre[canvas].quadraticCurveTo(
+        physics.position.x * theatre.scale
+      , Math.floor(physics.position.y - physics.halfWidth - offset) * theatre.scale
+      , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+
+      theatre[canvas].quadraticCurveTo(
+        Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
+      , physics.position.y * theatre.scale
+      , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+
+      theatre[canvas].quadraticCurveTo(
+        physics.position.x * theatre.scale
+      , Math.floor(physics.position.y + physics.halfWidth + offset) * theatre.scale
+      , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+
+      theatre[canvas].quadraticCurveTo(
+        Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
+      , physics.position.y * theatre.scale
+      , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+
+      theatre[canvas].fill() 
+    }
+
+    /**
+     *  
+     */ 
+    , drawBezierCurvedSquareFromCenter: function(canvas, physics, color, offset, divider){
+
+      if (theatre.isOutsideOfCanvas(
+            (physics.position.x + physics.halfWidth) 
+          , (physics.position.x - physics.halfWidth) 
+          , (physics.position.y - physics.halfHeight) 
+          , (physics.position.y + physics.halfHeight))){
+        return;
+      }
+
+      theatre[canvas].fillStyle = color
+
+      theatre[canvas].beginPath()
+      theatre[canvas].moveTo(
+        Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale
+      )
+      theatre[canvas].bezierCurveTo(
+        Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
+
+      , Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
+
+      , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+
+      theatre[canvas].bezierCurveTo(
+        Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
+      , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
+
+      , Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
+      , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
+
+      , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+
+      theatre[canvas].bezierCurveTo(
+        Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
+    
+      , Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
+
+      , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+
+      theatre[canvas].bezierCurveTo(
+        Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
+      , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
+
+      , Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
+      , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
+
+      , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+
+      theatre[canvas].fill() 
+    }
     /**
      *  
      */ 
   , drawSquareFromLeftTopCorner: function(canvas, position, size, color){
 
       if (theatre.isOutsideOfCanvas(
-            position.x + size
-          , position.x
-          , position.y
-          , position.y + size)){
+            (position.x + size) 
+          , position.x 
+          , position.y 
+          , (position.y + size) )){
         return;
       }
 
       theatre[canvas].fillStyle = color
       theatre[canvas].fillRect(
-        Math.floor(position.x)
-      , Math.floor(position.y)
-      , size
-      , size)
+        Math.floor(position.x) * theatre.scale
+      , Math.floor(position.y) * theatre.scale
+      , size * theatre.scale
+      , size * theatre.scale)
     }
   
     /**
@@ -431,18 +573,18 @@ var theatre = {
   , drawCircle: function(canvas, physics, color){
 
       if (theatre.isOutsideOfCanvas(
-            physics.position.x + physics.halfWidth
-          , physics.position.x - physics.halfWidth
-          , physics.position.y - physics.halfHeight
-          , physics.position.y + physics.halfHeight)){
+            (physics.position.x + physics.halfWidth)
+          , (physics.position.x - physics.halfWidth) 
+          , (physics.position.y - physics.halfHeight) 
+          , (physics.position.y + physics.halfHeight))){
         return;
       }
 
       theatre[canvas].beginPath()
       theatre[canvas].arc(
-        Math.floor(physics.position.x)
-      , Math.floor(physics.position.y)
-      , physics.halfWidth
+        Math.floor(physics.position.x) * theatre.scale
+      , Math.floor(physics.position.y) * theatre.scale
+      , physics.halfWidth * theatre.scale
       , 0
       , 2 * Math.PI
       , false)
@@ -457,13 +599,13 @@ var theatre = {
   , drawLine: function(canvas, position, width, color){
       theatre[canvas].beginPath()
       theatre[canvas].strokeStyle = color
-      theatre[canvas].lineWidth   = 1
+      theatre[canvas].lineWidth = 1 * theatre.scale
       theatre[canvas].moveTo(
-        Math.floor(position.x)
-      , Math.floor(position.y))
+        Math.floor(position.x) * theatre.scale
+      , Math.floor(position.y) * theatre.scale)
       theatre[canvas].lineTo(
-        Math.floor(position.x + width)
-      , Math.floor(position.y))
+        Math.floor(position.x + width) * theatre.scale
+      , Math.floor(position.y) * theatre.scale)
       theatre[canvas].stroke()
     }
   
@@ -473,13 +615,13 @@ var theatre = {
   , drawLineWithVector: function(canvas, physics, vector, color){
         theatre[canvas].beginPath()
         theatre[canvas].strokeStyle = color
-        theatre[canvas].lineWidth   = 1
+        theatre[canvas].lineWidth   = 1 * theatre.scale
         theatre[canvas].moveTo(
-          Math.floor(physics.position.x)
-        , Math.floor(physics.position.y))
+          Math.floor(physics.position.x) * theatre.scale
+        , Math.floor(physics.position.y) * theatre.scale)
         theatre[canvas].lineTo(
-          Math.floor(physics.position.x + vector.x)
-        , Math.floor(physics.position.y + vector.y))
+          Math.floor(physics.position.x + vector.x) * theatre.scale
+        , Math.floor(physics.position.y + vector.y) * theatre.scale)
         theatre[canvas].stroke()
     }
   
@@ -494,11 +636,11 @@ var theatre = {
 
         theatre[canvas].beginPath()
         theatre[canvas].strokeStyle = color
-        theatre[canvas].lineWidth   = Math.floor(lineWidth)
+        theatre[canvas].lineWidth   = Math.floor(lineWidth) * theatre.scale
 
         theatre[canvas].moveTo(
-          Math.floor(positionForLine.x)
-        , Math.floor(positionForLine.y))
+          Math.floor(positionForLine.x) * theatre.scale
+        , Math.floor(positionForLine.y) * theatre.scale)
 
         for (var i = 0, positionIndex = startIndex; i < maxLength; i++) {
           positionForLine = linePositions[positionIndex]
@@ -508,16 +650,16 @@ var theatre = {
           }
 
           theatre[canvas].lineTo(
-            Math.floor(positionForLine.x)
-          , Math.floor(positionForLine.y))
+            Math.floor(positionForLine.x) * theatre.scale
+          , Math.floor(positionForLine.y) * theatre.scale)
 
           positionIndex = (positionIndex + 1) % maxLength
         }
 
         if (physics){
           theatre[canvas].lineTo(
-            Math.floor(physics.position.x)
-          , Math.floor(physics.position.y))
+            Math.floor(physics.position.x) * theatre.scale
+          , Math.floor(physics.position.y) * theatre.scale)
         }
 
         theatre[canvas].stroke()
@@ -534,12 +676,12 @@ var theatre = {
       for (var i = lines.length - 1; i >= 0; i--) {
 
         theatre[canvas].moveTo(
-          Math.floor(lines[i].lineStartX)
-        , Math.floor(lines[i].lineStartY))
+          Math.floor(lines[i].lineStartX) * theatre.scale
+        , Math.floor(lines[i].lineStartY) * theatre.scale)
 
         theatre[canvas].lineTo(
-          Math.floor(lines[i].lineEndX)
-        , Math.floor(lines[i].lineEndY))
+          Math.floor(lines[i].lineEndX) * theatre.scale
+        , Math.floor(lines[i].lineEndY) * theatre.scale)
       }
 
       theatre[canvas].stroke()
@@ -556,25 +698,38 @@ var theatre = {
     }
 
     /**
-     *  This will adjust the postion on the canvas to the position of
-     *  the game stage cordinates. 
+     *  This will adjust the position on the canvas to the position of
+     *  the game stage coordinates. 
      *
      *  @param position {object}   - the position on the canvas
      *  {
-     *      x {nubmer}  - x position on canvas 0 - 400
-     *    , y {nubmer}  - y position on canvas 0 - 400
+     *      x {number}  - x position on canvas 0 - 400
+     *    , y {number}  - y position on canvas 0 - 400
      *  }
      */
   , adjustPositionToStage: function(position){
-      position.x = theatre.canvasBoxLeft + position.x
-      position.y = theatre.canvasBoxTop  + position.y
+      position.x = (theatre.canvasBoxLeft + (position.x/theatre.scale))
+      position.y = (theatre.canvasBoxTop + (position.y/theatre.scale)) 
+      return position;
   } 
 }
 
 if (ui.datGui) {
   var datGuiFolder = ui.datGui.addFolder("theatre")
+  datGuiFolder.add(theatre, "canvasBoxLeft").listen();   
+  datGuiFolder.add(theatre, "canvasBoxTop").listen();            
+  datGuiFolder.add(theatre, "canvasBoxRight").listen();          
+  datGuiFolder.add(theatre, "canvasBoxBottom").listen();         
+  datGuiFolder.add(theatre, "useResolutionDivider")
+  datGuiFolder.add(theatre, "resolutionDivider").listen();       
+  datGuiFolder.add(theatre, "movesWithPlayer").listen(); 
+  datGuiFolder.add(theatre, "currentTranslateX").listen();       
+  datGuiFolder.add(theatre, "currentTranslateY").listen();       
+  datGuiFolder.add(theatre, "worldNeedsRedraw").listen();        
+  datGuiFolder.add(theatre, "canvasHeight").listen();            
+  datGuiFolder.add(theatre, "canvasWidth").listen();       
   datGuiFolder.add(theatre, "allowScreenShake")
-  datGuiFolder.add(theatre, "scrrenShakeMagnitude")
+  datGuiFolder.add(theatre, "screenShakeMagnitude")
   datGuiFolder.add(theatre, "shakeDuration")
   datGuiFolder.add(theatre, "startShake")
   datGuiFolder.add(theatre, "drawGrids")

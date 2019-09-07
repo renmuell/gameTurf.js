@@ -4,6 +4,7 @@ var eslint     = require('gulp-eslint');
 var sourcemaps = require('gulp-sourcemaps');
 var browserify = require('gulp-browserify');
 var rename     = require('gulp-rename');
+var qunit = require('gulp-qunit');
 
 // path
 
@@ -49,7 +50,7 @@ gulp.task('bundle-js', ['build-js'], function(){
 
 // Release JS
 
-gulp.task('release-js', ['build'], function(){
+gulp.task('release-js', ['test'], function(){
   return gulp.src(path.build.mainJs)
              .on('error', onError)
              .pipe(gulp.dest(path.release.main))
@@ -62,6 +63,12 @@ gulp.task('release-js', ['build'], function(){
               }))
              .pipe(sourcemaps.write('./'))
              .pipe(gulp.dest(path.release.main));
+});
+
+
+gulp.task('test', ['build'], function() {
+  return gulp.src('./tests/*.html')
+      .pipe(qunit());
 });
 
 gulp.task('default', ['build']);

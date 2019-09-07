@@ -1,14 +1,15 @@
-/******************************************************************************
+/**
  * input.js
  *
- * 
- *****************************************************************************/
+ * @package gameturfjs
+ */
 
 (function() {
 
 /*global require, module */
 
 var theatre = require('./theatre')
+var ui      = require('./ui')
 
 /**
  *  
@@ -190,6 +191,16 @@ var input = {
 
       return input.movementDirectionData
     }
+}
+
+if (ui.datGui) {
+  var datGuiFolder = ui.datGui.addFolder("Input")
+  ui.datGui.remember(input)
+  datGuiFolder.add(input, "shiftPressed").listen()
+  datGuiFolder.add(input.movementDirectionData, "playerInteraction").listen()
+  datGuiFolder.add(input.movementDirectionData, "isRunning").listen()
+  datGuiFolder.add(input.movementDirectionData.vector, "x").listen()
+  datGuiFolder.add(input.movementDirectionData.vector, "y").listen()
 }
 
 module.exports = input

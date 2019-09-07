@@ -13,12 +13,18 @@ var Physics       = require('./../entityPlugins/physics')
 var LastPositions = require('./../entityPlugins/lastPositions')
 var sound         = require('./../core/sound')
 var physicsHelper = require('./../helpers/physicsHelper')
+var ui            = require('./../core/ui')
 
-var WindParticleFactory = function(){
+if (ui.datGui) {
+  var windParticles = ui.datGui.addFolder("WindParticles")
+}  
+
+var WindParticleFactory = function(id){
 
   var WindParticle = {
-    
-      physics: Physics({
+      Id: id
+    , type: 'WindParticle'
+    , physics: Physics({
         position: {
           x : 0
         , y : 0
@@ -73,7 +79,6 @@ var WindParticleFactory = function(){
 
           WindParticle.physics.speed = windSpeed
 
-          
           WindParticle.movementDirectionData.vector.x = (Math.random() - 0.5 + windDirection.x)
           WindParticle.movementDirectionData.vector.y = (Math.random() - 0.5 + windDirection.y)
 
@@ -94,6 +99,22 @@ var WindParticleFactory = function(){
         var opacity = ((-1 * Math.pow(currentLifeTimeNormal, 2)) + 1)
         */
       }
+  }
+  
+  if (ui.datGui) {
+    var datGuiFolder = windParticles.addFolder("WindParticle - " + WindParticle.Id)
+    ui.datGui.remember(WindParticle)
+    datGuiFolder.add(WindParticle, "isAlive").listen()
+    datGuiFolder.add(WindParticle, "lifeTime").listen()
+    //datGuiFolder.add(WindParticle, "createdTime")
+    datGuiFolder.add(WindParticle, "type")
+
+    datGuiFolder.add(WindParticle.movementDirectionData.vector, "x").listen()
+    datGuiFolder.add(WindParticle.movementDirectionData.vector, "y").listen()
+    datGuiFolder.add(WindParticle.movementDirectionData, "isRunning").listen()
+
+    WindParticle.lastPositions.addToDatGuiFolder(datGuiFolder)
+    WindParticle.physics.addToDatGuiFolder(datGuiFolder)
   }
 
   return WindParticle

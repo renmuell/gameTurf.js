@@ -14,7 +14,7 @@
         
 
         /**
-         * 
+         * velocity 1 -> 100px pro Sekunde: 100 px/s
          * @param {*} timeElapsed 
          * @param {*} velocityDirection 
          */

@@ -22,7 +22,7 @@ module.exports = function(settings){
       , setTimeDelay       : settings.setTimeDelay || 50
       , lastEntityIndex    : 0
       , onlyUpdateIfMoving : false
-      , lineWidth          : 1
+      , lineWidth          : settings.lineWidth || 1
       , shouldDrawLine     : true
       , shouldDrawBodies   : settings.shouldDrawBodies !== undefined ? settings.shouldDrawBodies : true
       , color              : settings.color ||  {
@@ -41,8 +41,6 @@ module.exports = function(settings){
           lastPositionsFolder.add(lastPositions, "lastEntityIndex").listen()
           lastPositionsFolder.add(lastPositions, "onlyUpdateIfMoving")
           lastPositionsFolder.add(lastPositions, "lineWidth")
-          lastPositionsFolder.add(lastPositions, "drawLine")
-          lastPositionsFolder.add(lastPositions, "drawBodies")
         }
 
       , clear: function(){

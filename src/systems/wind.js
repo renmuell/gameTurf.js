@@ -10,6 +10,7 @@
 
 var util                = require('./../core/util')
 var WindParticleFactory = require('./WindParticleFactory')
+var ui                  = require('./../core/ui')
 
 var wind = {
 
@@ -20,11 +21,11 @@ var wind = {
 
   , init: function(){
       for (var i = 0; i < 10; i++) {
-        wind.windParticles.push(WindParticleFactory())
+        wind.windParticles.push(WindParticleFactory(i))
       }
     }
 
-  , incluenceEntityPhysic: function(physics, moveDirectionVector){
+  , influenceEntityPhysic: function(physics, moveDirectionVector){
       if (Math.random() > 0.5) {
         moveDirectionVector.x += (wind.windDirection.x * (1 / physics.mass)) / 1000
         moveDirectionVector.y += (wind.windDirection.y * (1 / physics.mass)) / 1000
@@ -69,6 +70,14 @@ var wind = {
 }
 
 wind.init()
+
+if (ui.datGui) {
+  var datGuiFolder = ui.datGui.addFolder("Wind")
+  datGuiFolder.add(wind.windDirection, "x").listen();   
+  datGuiFolder.add(wind.windDirection, "y").listen();   
+  datGuiFolder.add(wind, "windSpeed").listen();  
+  datGuiFolder.add(wind, "maxAliveWindPartiles")
+}
 
 module.exports = wind
 

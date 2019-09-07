@@ -54,16 +54,16 @@ module.exports = function(config){
 
     , addToDatGuiFolder: function(folder){
         var physicsFolder = folder.addFolder("Physics")
-        physicsFolder.add(physics, "speed")
-        physicsFolder.add(physics, "runSpeed")
-        physicsFolder.add(physics, "isBounce")
-        physicsFolder.add(physics, "angle")
-        physicsFolder.add(physics, "mass")
+        physicsFolder.add(physics, "speed").listen()
+        physicsFolder.add(physics, "runSpeed").listen()
+        physicsFolder.add(physics, "isBounce").listen()
+        physicsFolder.add(physics, "angle").listen()
+        physicsFolder.add(physics, "mass").listen()
         physicsFolder.add(physics, "currentSpeed").listen()
-        physicsFolder.add(physics, "isFrictionless")
-        physicsFolder.add(physics, "frictionMagnitude")
-        physicsFolder.add(physics, "x").listen()
-        physicsFolder.add(physics, "y").listen()
+        physicsFolder.add(physics, "isFrictionless").listen()
+        physicsFolder.add(physics, "frictionMagnitude").listen()
+        physicsFolder.add(physics.position, "x").listen()
+        physicsFolder.add(physics.position, "y").listen()
         physicsFolder.add(physics, "collsition").listen()
         physicsFolder.add(physics, "isMoving").listen()
         physicsFolder.add(physics, "isRunning").listen()
@@ -72,11 +72,17 @@ module.exports = function(config){
       }
 
     , calculateFriction: function(){
+
         if (!physics.isFrictionless) {
-          if (physics.currentSpeed  > 0.1)
-            physics.lowerVelocityTo(physics.currentSpeed - physics.frictionMagnitude)
-          else
+          if (physics.currentSpeed  > 0) {
+            if (physics.currentSpeed < physics.frictionMagnitude) {
+              physics.setVelocity(0, 0)
+            } else {
+              physics.lowerVelocityTo(physics.currentSpeed - physics.frictionMagnitude)
+            } 
+          } else {
             physics.setVelocity(0, 0)
+          }
         }
       }
 
@@ -113,7 +119,7 @@ module.exports = function(config){
 
             for (var i = 0; i < physics.entityCollisions.length; i++) {
               if (physics.entityCollisions[i]) {
-                entity = entityManager.enitites[i]
+                entity = entityManager.entities[i]
               }
             }
 

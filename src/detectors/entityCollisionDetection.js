@@ -1,8 +1,8 @@
-/******************************************************************************
+/**
  * entityCollisionDetection.js
  *
- * 
- *****************************************************************************/
+ * @package gameturfjs
+ */
 
 (function() {
 
@@ -27,16 +27,16 @@ var entityCollisionDetection = {
    */ 
 , update: function(timeElapsed){
 
-    for (var i = entityManager.visableEntities.length - 1; i >= 0; i--) {
+    for (var i = entityManager.visibleEntities.length - 1; i >= 0; i--) {
 
-      var entityId =entityManager.visableEntities[i].id
-      var entity = entityManager.enitites[entityId]
-      var checkEntites = entityManager.visableEntities
+      var entityId =entityManager.visibleEntities[i].id
+      var entity = entityManager.entities[entityId]
+      var checkEntities = entityManager.visibleEntities
 
-      for (var y = checkEntites.length - 1; y >= 0; y--) {
+      for (var y = checkEntities.length - 1; y >= 0; y--) {
 
-        var checkEntityId = checkEntites[y].id
-        var checkEntity = entityManager.enitites[checkEntityId]
+        var checkEntityId = checkEntities[y].id
+        var checkEntity = entityManager.entities[checkEntityId]
 
         if (checkEntityId != entityId) {
           if (entityCollisionDetection.collsitionDetectionOfTwoEntities(entity, checkEntity)){

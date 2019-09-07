@@ -24,12 +24,12 @@
     "gulp": "^3.9.1",
     "gulp-browserify": "^0.5.1",
     "gulp-eslint": "^5.0.0",
-    "gulp-sourcemaps": "^2.6.4",
-    "gulp-tape": "^1.0.0",
-    "gulp-uglify": "^3.0.1",
+    "gulp-qunit": "^2.0.3",
     "gulp-rename": "^1.4.0",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-uglify": "^3.0.1",
     "nyc": "^13.0.1",
-    "tape": "^4.9.1"
+    "qunit": "^2.9.2"
   },
   "homepage": "https://github.com/renmuell/gameTurf.js#readme"
 }

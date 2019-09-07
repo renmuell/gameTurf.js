@@ -15,8 +15,8 @@ QuadTree = QuadTree.QuadTree;
 
 var entityManager = {
 
-    enitites        : []
-  , visableEntities : []
+    entities        : []
+  , visibleEntities : []
   , tree            : new QuadTree({
       x      : 0
     , y      : 0
@@ -25,53 +25,53 @@ var entityManager = {
     })
 
   , add: function(entity){
-      var nextIndex                     = entityManager.enitites.length
+      var nextIndex                     = entityManager.entities.length
       entity.Id                         = nextIndex
       entity.physics.id                 = nextIndex
-      entityManager.enitites[nextIndex] = entity
+      entityManager.entities[nextIndex] = entity
     }
 
   , update: function(timeElapsed){
 
-      entityManager.visableEntities = entityManager.tree.retrieveInBounds({
+      entityManager.visibleEntities = entityManager.tree.retrieveInBounds({
         x      : theatre.canvasBoxLeft
       , y      : theatre.canvasBoxTop
       , width  : theatre.canvasWidth
       , height : theatre.canvasHeight
       })
 
-      for (var y = entityManager.enitites.length - 1; y >= 0; y--) {
-        entityManager.enitites[y].update(timeElapsed)
+      for (var y = entityManager.entities.length - 1; y >= 0; y--) {
+        entityManager.entities[y].update(timeElapsed)
       }
 
       entityManager.tree.clear();
-      for (var i = entityManager.enitites.length - 1; i >= 0; i--) {
-        entityManager.enitites[i].physics.position.id = entityManager.enitites[i].physics.id
-        entityManager.tree.insert(entityManager.enitites[i].physics.position)
+      for (var i = entityManager.entities.length - 1; i >= 0; i--) {
+        entityManager.entities[i].physics.position.id = entityManager.entities[i].physics.id
+        entityManager.tree.insert(entityManager.entities[i].physics.position)
       }
     }
 
   , postUpdate: function(timeElapsed){
-      for (var i = entityManager.enitites.length - 1; i >= 0; i--) {
-        if (entityManager.enitites[i].postUpdate) {
-          entityManager.enitites[i].postUpdate(timeElapsed)
+      for (var i = entityManager.entities.length - 1; i >= 0; i--) {
+        if (entityManager.entities[i].postUpdate) {
+          entityManager.entities[i].postUpdate(timeElapsed)
         }
       }
     }
   
   , preDraw: function(timeElapsed){
-      for (var i = entityManager.visableEntities.length - 1; i >= 0; i--) {
-        var id = entityManager.visableEntities[i].id
-        if (entityManager.enitites[id].preDraw) {
-          entityManager.enitites[id].preDraw(timeElapsed)
+      for (var i = entityManager.visibleEntities.length - 1; i >= 0; i--) {
+        var id = entityManager.visibleEntities[i].id
+        if (entityManager.entities[id].preDraw) {
+          entityManager.entities[id].preDraw(timeElapsed)
         }
       }
     }
 
   , draw: function(timeElapsed){
-      for (var i = entityManager.visableEntities.length - 1; i >= 0; i--) {
-        var id = entityManager.visableEntities[i].id
-        entityManager.enitites[id].draw(timeElapsed)
+      for (var i = entityManager.visibleEntities.length - 1; i >= 0; i--) {
+        var id = entityManager.visibleEntities[i].id
+        entityManager.entities[id].draw(timeElapsed)
       }
     }
 
@@ -82,9 +82,9 @@ var entityManager = {
       var neahrestEnitty
       var neahrestEnittyDistance = Number.MAX_SAFE_INTEGER
 
-      for (var y = entityManager.visableEntities.length - 1; y >= 0; y--) {
-        var checkEntityId = entityManager.visableEntities[y].id
-        var checkEntity   = entityManager.enitites[checkEntityId]
+      for (var y = entityManager.visibleEntities.length - 1; y >= 0; y--) {
+        var checkEntityId = entityManager.visibleEntities[y].id
+        var checkEntity   = entityManager.entities[checkEntityId]
 
         if (entity.physics.id == checkEntityId) {
           continue

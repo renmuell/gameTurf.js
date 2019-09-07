@@ -1,8 +1,8 @@
-/******************************************************************************
+/**
  * game.js
  *
- * @package gameturf
- *****************************************************************************/
+ * @package gameturfjs
+ */
 
 (function() {
 
@@ -15,17 +15,17 @@ var world                     = require('./../systems/world')
 var ui                        = require('./ui')
 var entityCollisionDetection  = require('./../detectors/entityCollisionDetection')
 var entityManager             = require('./../managers/entityManager')
-var worldCollsitionDetection  = require('./../detectors/worldCollsitionDetection')
+var worldCollisionDetection   = require('./../detectors/worldCollisionDetection')
 var wind                      = require('./../systems/wind')
 var sound                     = require('./sound')
 var Stats                     = require('../../vendors/stats.min')
 
 /**
- *  This is the heart of the game engine. It conotains the functions to 
+ *  This is the heart of the game engine. It contains the functions to 
  *  start and stop the engine, it beholds the powerful game loop!
  *
- *  @dev Maybe make access to these functions easer. Insteat of
- *       Gameturf.game.init() make it Gameturf.init(). 
+ *  @dev Maybe make access to these functions easer. Instead of
+ *       GameTurf.game.init() make it GameTurf.init(). 
  */ 
 var game = {
 
@@ -182,8 +182,15 @@ var game = {
     }
 
   , panic: function() {
-        delta = 0; // discard the unsimulated time
+        delta = 0; // discard the un-simulated time
         // ... snap the player to the authoritative state
+    }
+
+  , step: function(){
+      game.update(game.timestep)
+      game.postUpdate(game.timestep)
+      game.preDraw(game.timestep)
+      game.draw(game.timestep);
     }
 
     /**
@@ -191,7 +198,7 @@ var game = {
      */
   , update: function(delta){
       wind.update(delta)
-      worldCollsitionDetection.update(delta)
+      worldCollisionDetection.update(delta)
       entityCollisionDetection.update(delta)
       entityManager.update(delta)
       ui.update(delta);
@@ -228,7 +235,7 @@ var game = {
         theatre.worldNeedsRedraw = false
       }
 
-      worldCollsitionDetection.draw(delta)
+      worldCollisionDetection.draw(delta)
       wind.draw(delta)
       ui.draw(delta);
       theatre.postShake()
@@ -252,7 +259,16 @@ var game = {
 if (ui.datGui) {
   var datGuiFolder = ui.datGui.addFolder("Game")
   ui.datGui.remember(game)
-  datGuiFolder.add(game, "drawWorld")
+  datGuiFolder.add(game, "stepTimeThen").listen()
+  datGuiFolder.add(game, "stepTimeNow").listen()
+  datGuiFolder.add(game, "stepTimeElapsed").listen()
+  datGuiFolder.add(game, "timestep").listen()
+  datGuiFolder.add(game, "maxFPS").listen()
+  datGuiFolder.add(game, "isRunning").listen()
+  datGuiFolder.add(game, "fps").listen()
+  datGuiFolder.add(game, "framesThisSecond").listen()
+  datGuiFolder.add(game, "lastFpsUpdate").listen()
+  datGuiFolder.add(game, "showStats")
 }
 
 module.exports = game

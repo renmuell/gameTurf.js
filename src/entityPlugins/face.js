@@ -26,10 +26,10 @@ module.exports = function(config){
     , leftEyePosition         : { x: 0, y: 0 }
     , rightEyePosition        : { x: 0, y: 0 }
     , mouthPosition           : { x: 0, y: 0 }
-    , compareVector           : { x: 0, y:-1 }
     , eyeSize                 : 0
     , mouthCloseSize          : 0
     , mouthOpenSize           : 0
+    , lookDirectionAngle:     0
 
     , init: function(width){
         face.defaultFace    = face.drawNoramlFace
@@ -43,6 +43,7 @@ module.exports = function(config){
         var faceFolder = folder.addFolder("Face")
         faceFolder.add(face, "faceExpressionDuration")
         faceFolder.add(face, "faceExpressionStartTime").listen()
+        faceFolder.add(face, "lookDirectionAngle").listen()
       }
 
     , update: function(physics, isInteracting){
@@ -57,15 +58,15 @@ module.exports = function(config){
 
           } else if(isInteracting){
 
-            var lookAngle = util.getVectorAngleDegree(face.compareVector, physics.velocity)
+            face.lookDirectionAngle = util.vectorToDegree(physics.velocity)
 
-            if (lookAngle > -30 && lookAngle < 30) {
-              face.SetFaceLookTop()
-            } else if (lookAngle > 150 && lookAngle < 210){
+            if (face.lookDirectionAngle > -45 && face.lookDirectionAngle < 45) {
               face.SetFaceLookDown()
-            } else if (lookAngle < 180 && lookAngle > 2){
+            } else if (face.lookDirectionAngle < -135 || face.lookDirectionAngle > 135){
+              face.SetFaceLookTop()
+            } else if (face.lookDirectionAngle > 45 && face.lookDirectionAngle < 135){
               face.SetFaceLookRight()
-            } else if (lookAngle < -2 ||  lookAngle > 2 && lookAngle != 180){
+            } else if (face.lookDirectionAngle < -45 && face.lookDirectionAngle > -135){
               face.SetFaceLookLeft()
             }
           }

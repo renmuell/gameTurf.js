@@ -1,8 +1,8 @@
-/******************************************************************************
+/**
  * util.js
  *
- * 
- *****************************************************************************/
+ * @package gameturfjs
+ */
 
 (function() {
 
@@ -17,7 +17,7 @@ var util = {
      *  
      */ 
     vectorToDegree: function(vector) {
-      return util.vectorToRadiant(vector) * 180 / Math.pi
+      return util.vectorToRadiant(vector) * 180 / Math.PI
     }
 
     /**
@@ -33,6 +33,13 @@ var util = {
   , vectorLength: function(vector){
       return Math.sqrt(Math.pow(vector.x, 2) + Math.pow(vector.y, 2))
     }
+
+    /**
+     *  
+     */ 
+  , vectorDistanz: function (vector1, vector2) {
+    return Math.sqrt(Math.pow(vector2.x - vector1.x, 2) + Math.pow(vector2.y - vector1.y, 2))
+  }
 
     /**
      *  
@@ -55,8 +62,7 @@ var util = {
      *  
      */ 
   , getVectorAngleDegree: function(vector1, vector2){
-      var a = (Math.atan2(vector2.y, vector2.x) - Math.atan2(vector1.y, vector1.x))
-      return a * 180 / Math.PI
+      return Math.atan2(vector2.x - vector1.x, vector2.y - vector1.y) * 180 / Math.PI
     }
 
     /**
@@ -73,6 +79,17 @@ var util = {
 
       return vector
     }
+
+    /**
+     *  
+     */ 
+  , getPositionByDegree: function(position, degree, radius){
+      degree = degree * Math.PI / 180
+      return {
+        x: Math.round(radius * Math.sin(degree)) + position.x
+      , y: Math.round(radius * Math.cos(degree)) + position.y
+     }
+  }
 }
 
 module.exports = util

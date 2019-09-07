@@ -14,6 +14,7 @@ var settings  = require('./../core/settings')
 var tileHelper = {
 
     tileWalls: []
+  , createdTime   : Date.now()
   , grassHalmPositions: []
   , neahrestTileWalls: []
 
@@ -65,27 +66,27 @@ var tileHelper = {
 
           var arrayPosition = y * worldWith + x
 
-          if (map[arrayPosition] == 1) {
+          if (map[arrayPosition] != 0) {
 
             var val = 0
 
             // oben ist keine wand
-            if (y > 0 && map[(y - 1) * worldWith + x] == 1) {
+            if (y > 0 && map[(y - 1) * worldWith + x] != 0) {
               val |= 1
             }
 
             // rechts ist keine wand
-            if (x < (worldWith-1) && map[y * worldWith + x + 1] == 1) {
+            if (x < (worldWith-1) && map[y * worldWith + x + 1] != 0) {
               val |= 2
             }
 
             // unten ist keine wand
-            if (y < (wolrdHeight-1) && map[(y + 1) * worldWith + x] == 1){
+            if (y < (wolrdHeight-1) && map[(y + 1) * worldWith + x] != 0){
                 val |= 4
             }
 
             // links ist keine wand
-            if (x > 0 && map[y * worldWith + x - 1] == 1) {
+            if (x > 0 && map[y * worldWith + x - 1] != 0) {
               val |= 8
             }
 
@@ -186,7 +187,7 @@ var tileHelper = {
       return tileHelper.tileWalls[tileArrayPositionY * worldWith + tileArrayPositionX]
     }
 
-  , drawTiles: function(mapWithTileTypes, worldWith, wolrdHeight){
+  , drawTiles: function(timeElapsed, map, mapWithTileTypes, worldWith, wolrdHeight){
 
       var mintileArrayPositionX = Math.floor(Math.floor(theatre.canvasBoxLeft)   / settings.tileSize)
         , mintileArrayPositionY = Math.floor(Math.floor(theatre.canvasBoxTop)    / settings.tileSize)
@@ -205,6 +206,18 @@ var tileHelper = {
       if (maxtileArrayPositionY > wolrdHeight - 1) maxtileArrayPositionY = wolrdHeight - 1
 
       var tilePosition = {}
+
+      //animationSpan
+      var timeLength = 5000
+      var timeSegments = (Date.now() - tileHelper.createdTime) % timeLength
+
+      // linearNormalizeTimeSegments: -1 to 1 => mapping to smaller range
+      var linearNormalizeTimeSegments = timeSegments / timeLength
+      linearNormalizeTimeSegments *= 2
+      linearNormalizeTimeSegments -= 1
+   
+      // quadraticNormalizeTimeSegments: 0 to 1 to 0 => ^^^^^^^ => -1 is zero and 1 is zero -> continues loop for animation
+      var quadraticNormalizeTimeSegments = ((-1 * Math.pow(linearNormalizeTimeSegments, 2)) + 1)
 
       for (var y = mintileArrayPositionY; y <= maxtileArrayPositionY; y++) {
         for (var x = mintileArrayPositionX; x <= maxtileArrayPositionX; x++) {
@@ -225,13 +238,20 @@ var tileHelper = {
           , settings.tileSize +1
           , "#CCDDAF")
 
-          //tileHelper.drawGrass(tilePosition, tileWidth, tileHeight)
+          if (map[y * worldWith + x] === 2) {
+            tileHelper.drawGrass(quadraticNormalizeTimeSegments, tilePosition, tileWidth, tileHeight, 200, 6)
+          } else {
+            tileHelper.drawGrass(quadraticNormalizeTimeSegments, tilePosition, tileWidth, tileHeight, 20, 3)
+          }
         }
       }
     }
   
-  , drawGrass: function(position, width, height){
-      for (var i = 10; i >= 0; i--) {
+  , drawGrass: function(quadraticNormalizeTimeSegments, position, width, height, count, grassHeight){
+      theatre.foreground.beginPath();
+      theatre.foreground.lineWidth = 2
+      theatre.foreground.strokeStyle = "rgba(167,191,127,0.6)";
+      for (var i = count; i >= 0; i--) {
 
         var grassHalmPosition;
         var key = position.x + ";" + position.y + ";" + i;
@@ -239,17 +259,26 @@ var tileHelper = {
           grassHalmPosition = tileHelper.grassHalmPositions[key];
         } else {
           grassHalmPosition = tileHelper.grassHalmPositions[key] = {
-            x: position.x + (((Math.random() * width)  - 10) + 5)
-          , y: position.y + (((Math.random() * height) - 10) + 5)
+            x: position.x + (((Math.random() * width)  ) )
+          , y: position.y + (((Math.random() * height) ) )
           }
         }
 
-        theatre.drawSquareFromLeftTopCorner(
-          'backdrop'
-        , grassHalmPosition
-        , 5
-        , "rgba(167,191,127,0.3)")
+        theatre.foreground.moveTo(
+          Math.floor(grassHalmPosition.x) * theatre.scale
+        , Math.floor(grassHalmPosition.y) * theatre.scale
+        )
+
+        theatre.foreground.quadraticCurveTo(
+          Math.floor(grassHalmPosition.x) * theatre.scale
+        , Math.floor(grassHalmPosition.y - (grassHeight/2)) * theatre.scale
+        , Math.floor(grassHalmPosition.x + ((grassHeight*quadraticNormalizeTimeSegments)-(grassHeight/2))) * theatre.scale
+        , Math.floor(grassHalmPosition.y - grassHeight) * theatre.scale
+        )
       }
+
+      theatre.foreground.stroke()
+      theatre.foreground.strokeWidth = 1
     }
 }
 

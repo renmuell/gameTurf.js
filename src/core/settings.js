@@ -1,8 +1,8 @@
-/******************************************************************************
+/**
  * settings.js
  *
- * 
- *****************************************************************************/
+ * @package gameturfjs
+ */
 
 (function() {
 
@@ -21,7 +21,7 @@ module.exports = {
     /**
      *  
      */ 
-  , datGuiIsOn            : false
+  , datGuiIsOn            : true
 
     /**
      *  
@@ -41,7 +41,7 @@ module.exports = {
     /**
      *  
      */ 
-  , alloweBackgroundMusic : false
+  , allowBackgroundMusic : false
 
     /**
      *  

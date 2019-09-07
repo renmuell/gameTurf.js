@@ -9,7 +9,7 @@
 /*global require, module */
 
 var tilesHelper               = require('./../helpers/tilesHelper')
-var worldCollsitionDetection  = require('./../detectors/worldCollsitionDetection')
+var worldCollisionDetection  = require('./../detectors/worldCollisionDetection')
 
 var world = {
 
@@ -48,7 +48,7 @@ var world = {
       timeElapsed
     , physics
     ){  
-      return worldCollsitionDetection.collsitionDetection(
+      return worldCollisionDetection.collsitionDetection(
         timeElapsed
       , world.mapWithTileTypes
       , world.worldWith
@@ -61,7 +61,9 @@ var world = {
      */
   , draw: function(timeElapsed) {
       tilesHelper.drawTiles(
-        world.mapWithTileTypes
+        timeElapsed
+      , world.map
+      , world.mapWithTileTypes
       , world.worldWith
       , world.wolrdHeight)
     }

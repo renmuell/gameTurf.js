@@ -1,8 +1,8 @@
-/******************************************************************************
- * worldCollsitionDetection.js
+/**
+ * worldCollisionDetection.js
  *
- * 
- *****************************************************************************/
+ * @package gameturfjs
+ */
 
 (function() {
 
@@ -17,7 +17,7 @@ var physicsHelper = require('./../helpers/physicsHelper')
 /**
  *  
  */ 
-var worldCollsitionDetection = {
+var worldCollisionDetection = {
 
     /**
      *  
@@ -52,7 +52,7 @@ var worldCollsitionDetection = {
       for (var tileNr = tilesHelper.neahrestTileWalls.length - 1; tileNr >= 0; tileNr--) {
         if (tilesHelper.neahrestTileWalls[tileNr]) {
           for (var tileWallNr = tilesHelper.neahrestTileWalls[tileNr].length - 1; tileWallNr >= 0; tileWallNr--) {
-            colide = worldCollsitionDetection.calculateWallCollsitionDenfung(
+            colide = worldCollisionDetection.calculateWallCollsitionDenfung(
                 timeElapsed
               , tilesHelper.neahrestTileWalls[tileNr][tileWallNr]
               , physics
@@ -82,7 +82,7 @@ var worldCollsitionDetection = {
           , y: hitboxPoint.y
         }, timeElapsed);
 
-        if(worldCollsitionDetection.checkLineIntersectionFast(
+        if(worldCollisionDetection.checkLineIntersectionFast(
               wall[0].x
             , wall[0].y
             , wall[1].x
@@ -93,7 +93,7 @@ var worldCollsitionDetection = {
             , hitboxPointFuturePosition.y)){
 
           if (settings.debugWorldCollisions) {
-            worldCollsitionDetection.debugCollisionLine(
+            worldCollisionDetection.debugCollisionLine(
               wall[0].x
             , wall[0].y
             , wall[1].x
@@ -141,7 +141,7 @@ var worldCollsitionDetection = {
   , checkLineIntersectionFast:  function (a,b,c,d,p,q,r,s) {
 
       if (settings.debugWorldCollisions) {
-        worldCollsitionDetection.debugLine(a,b,c,d,p,q,r,s)
+        worldCollisionDetection.debugLine(a,b,c,d,p,q,r,s)
       }
 
       var det = (c - a) * (s - q) - (r - p) * (d - b)
@@ -164,8 +164,8 @@ var worldCollsitionDetection = {
      */ 
   , update: function(timeElapsed){
       if(settings.debugWorldCollisions) {
-        worldCollsitionDetection.collsitions = []
-        worldCollsitionDetection.checkLines  = []
+        worldCollisionDetection.collsitions = []
+        worldCollisionDetection.checkLines  = []
       }
     }
 
@@ -174,8 +174,8 @@ var worldCollsitionDetection = {
      */ 
   , draw: function(timeElapsed){
       if(settings.debugWorldCollisions) {
-        theatre.drawMultipleLines('stage', worldCollsitionDetection.checkLines, "#F24962")
-        theatre.drawMultipleLines('stage', worldCollsitionDetection.collsitions, "blue")
+        theatre.drawMultipleLines('stage', worldCollisionDetection.checkLines, "#F24962")
+        theatre.drawMultipleLines('stage', worldCollisionDetection.collsitions, "blue")
       }
     }
 
@@ -184,14 +184,14 @@ var worldCollsitionDetection = {
      */ 
   , debugLine: function(a,b,c,d,p,q,r,s){
 
-      worldCollsitionDetection.checkLines.push({
+      worldCollisionDetection.checkLines.push({
         lineStartX : a
       , lineStartY : b
       , lineEndX   : c
       , lineEndY   : d
       })
 
-      worldCollsitionDetection.checkLines.push({
+      worldCollisionDetection.checkLines.push({
         lineStartX : p
       , lineStartY : q
       , lineEndX   : r
@@ -203,7 +203,7 @@ var worldCollsitionDetection = {
      *  
      */ 
   , debugCollisionLine: function(a,b,c,d){
-      worldCollsitionDetection.collsitions.push({
+      worldCollisionDetection.collsitions.push({
         lineStartX : a
       , lineStartY : b
       , lineEndX   : c
@@ -212,6 +212,6 @@ var worldCollsitionDetection = {
     }
 }
 
-module.exports =  worldCollsitionDetection
+module.exports =  worldCollisionDetection
 
 }());

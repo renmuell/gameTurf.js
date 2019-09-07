@@ -1,8 +1,8 @@
-/******************************************************************************
+/**
  * sound.js
  *
- * 
- *****************************************************************************/
+ * @package gameturfjs
+ */
 
 (function() {
 
@@ -40,7 +40,7 @@ var sound = {
           })
         }
 
-        if (settings.alloweBackgroundMusic
+        if (settings.allowBackgroundMusic
          && settings.backgroundSong.src) {
          
           sound.backgroundSong = new Howl({
@@ -105,7 +105,7 @@ var sound = {
      *  
      */ 
   , playBackgroundSound: function(){
-      if (settings.alloweBackgroundMusic) {
+      if (settings.allowBackgroundMusic) {
         sound.backgroundSong.play()
       }
     }
@@ -114,7 +114,7 @@ var sound = {
      *  
      */ 
   , pauseBackgroundSound: function(){
-      if (settings.alloweBackgroundMusic) {
+      if (settings.allowBackgroundMusic) {
         sound.backgroundSong.pause()
       }
     }

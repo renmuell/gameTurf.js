@@ -1,14 +1,13 @@
-/******************************************************************************
+/**
  * ui.js
  *
- * 
- *****************************************************************************/
+ * @package gameturfjs
+ */
 
 (function() {
 
-/*global require, module */
+/*global window, require, module */
 
-var dat       = require('./../../vendors/dat.gui.min')
 var settings  = require('./settings')
 
 /**
@@ -33,7 +32,7 @@ var ui = {
   /**
    *  
    */ 
-, datGui: settings.datGuiIsOn ? new dat.GUI() : undefined    
+, datGui: settings.datGuiIsOn && window.dat ? new window.dat.GUI() : undefined    
 
 , init: function(theatre, continueGameCallback){
 
@@ -93,12 +92,12 @@ var ui = {
   }
 
 , setBubblePosition: function (element, physics) {
-  if (ui.theatre.useResolutionDevider) {
-    element.style.top = (((ui.theatre.canvasBoxTop*ui.theatre.resolutionDevider)*-1) + (physics.position.y*ui.theatre.resolutionDevider) -(80)) + "px"
-    element.style.left = ((((ui.theatre.canvasBoxLeft*ui.theatre.resolutionDevider)*-1) + (physics.position.x*ui.theatre.resolutionDevider)) -(100)) + "px"
+  if (ui.theatre.useResolutionDivider) {
+    element.style.top = (((ui.theatre.canvasBoxTop*ui.theatre.resolutionDivider)*-1) + (physics.position.y*ui.theatre.resolutionDivider) -(80)) + "px"
+    element.style.left = ((((ui.theatre.canvasBoxLeft*ui.theatre.resolutionDivider)*-1) + (physics.position.x*ui.theatre.resolutionDivider)) -(100)) + "px"
   } else {
-    element.style.top = ((ui.theatre.canvasBoxTop*-1) + (physics.position.y) -80) + "px"
-    element.style.left = (((ui.theatre.canvasBoxLeft*-1) + physics.position.x) -100) + "px"
+    element.style.top = ((ui.theatre.canvasBoxTop*-1) + (physics.position.y)) *  ui.theatre.scale  -80 + "px"
+    element.style.left = (((ui.theatre.canvasBoxLeft*-1) + physics.position.x)) * ui.theatre.scale -100+ "px"
   }
 
 }
