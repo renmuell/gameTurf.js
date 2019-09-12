@@ -254,7 +254,29 @@ var theatre = {
     /**
      *  
      */ 
+
+  , resetCanvasTransformation: function (canvas) {
+    theatre[canvas].setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  , setCanvasTransformation: function (canvas) {
+
+    if (theatre.lastPhysics) {
+      var widthHalf  = theatre.canvasWidth / 2;
+      var heightHalf = theatre.canvasHeight / 2;
+
+      var playerX = theatre.lastPhysics.position.x * theatre.scale;
+      var playerY = theatre.lastPhysics.position.y * theatre.scale;
+
+      var posX = playerX - widthHalf;
+      var posY = playerY - heightHalf;
+
+      theatre[canvas].setTransform(1, 0, 0, 1, posX*-1, posY*-1);
+    }
+  } 
+
   , playerUpdate: function(physics){
+      theatre.lastPhysics = physics
       if (theatre.movesWithPlayer){
 
         var widthHalf  = theatre.canvasWidth / 2;
@@ -487,7 +509,7 @@ var theatre = {
     /**
      *  
      */ 
-    , drawBezierCurvedSquareFromCenter: function(canvas, physics, color, offset, divider){
+  , drawBezierCurvedSquareFromCenter: function(canvas, physics, color, offset, divider, notTop, notRight , notBottom , notLeft ){
 
       if (theatre.isOutsideOfCanvas(
             (physics.position.x + physics.halfWidth) 
@@ -504,46 +526,71 @@ var theatre = {
         Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
       , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale
       )
-      theatre[canvas].bezierCurveTo(
-        Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
-      , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
+      
+      if (notTop) {
+        theatre[canvas].lineTo(
+          Math.floor(physics.position.x + physics.halfWidth) * theatre.scale,
+          Math.floor(physics.position.y - physics.halfHeight) * theatre.scale
+        )
+      } else {
+        theatre[canvas].bezierCurveTo(
+          Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
 
-      , Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
-      , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
+        , Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
 
-      , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
-      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+        , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+      }
 
-      theatre[canvas].bezierCurveTo(
-        Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
-      , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
+      if (notRight) {
+        theatre[canvas].lineTo(
+            Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+          , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+      } else {
+        theatre[canvas].bezierCurveTo(
+          Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
+        , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
 
-      , Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
-      , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
+        , Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
+        , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
 
-      , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
-      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+        , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+      } 
 
-      theatre[canvas].bezierCurveTo(
-        Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
-      , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
-    
-      , Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
-      , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
+      if (notBottom){
+        theatre[canvas].lineTo(  
+          Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+      } else {
+        theatre[canvas].bezierCurveTo(
+          Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
+      
+        , Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
 
-      , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
-      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+        , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+      }
 
-      theatre[canvas].bezierCurveTo(
-        Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
-      , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
+      if (notLeft) {
+        theatre[canvas].lineTo(  
+         Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+      } else {
+        theatre[canvas].bezierCurveTo(
+          Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
+        , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
 
-      , Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
-      , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
+        , Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
+        , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
 
-      , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
-      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
-
+        , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+      }
       theatre[canvas].fill() 
     }
     /**

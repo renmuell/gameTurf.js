@@ -13,13 +13,21 @@
     
       var interaction = {
         
-        onInteraction: settings.onInteraction || function (entity) {
+          canInteract: true
 
-        },
+        , onInteraction: settings.onInteraction || function (entity) {
+
+          }
         
-        drawHighlightBox: settings.drawHighlightBox || function () {
+        , drawHighlightBox: settings.drawHighlightBox || function () {
 
-        }
+          }
+
+        , update: function (entity) {
+          // get nearest entities
+
+          // call interact
+        } 
       }
     
       return interaction

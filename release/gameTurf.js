@@ -973,7 +973,29 @@ var theatre = {
     /**
      *  
      */ 
+
+  , resetCanvasTransformation: function (canvas) {
+    theatre[canvas].setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  , setCanvasTransformation: function (canvas) {
+
+    if (theatre.lastPhysics) {
+      var widthHalf  = theatre.canvasWidth / 2;
+      var heightHalf = theatre.canvasHeight / 2;
+
+      var playerX = theatre.lastPhysics.position.x * theatre.scale;
+      var playerY = theatre.lastPhysics.position.y * theatre.scale;
+
+      var posX = playerX - widthHalf;
+      var posY = playerY - heightHalf;
+
+      theatre[canvas].setTransform(1, 0, 0, 1, posX*-1, posY*-1);
+    }
+  } 
+
   , playerUpdate: function(physics){
+      theatre.lastPhysics = physics
       if (theatre.movesWithPlayer){
 
         var widthHalf  = theatre.canvasWidth / 2;
@@ -1206,7 +1228,7 @@ var theatre = {
     /**
      *  
      */ 
-    , drawBezierCurvedSquareFromCenter: function(canvas, physics, color, offset, divider){
+  , drawBezierCurvedSquareFromCenter: function(canvas, physics, color, offset, divider, notTop, notRight , notBottom , notLeft ){
 
       if (theatre.isOutsideOfCanvas(
             (physics.position.x + physics.halfWidth) 
@@ -1223,46 +1245,71 @@ var theatre = {
         Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
       , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale
       )
-      theatre[canvas].bezierCurveTo(
-        Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
-      , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
+      
+      if (notTop) {
+        theatre[canvas].lineTo(
+          Math.floor(physics.position.x + physics.halfWidth) * theatre.scale,
+          Math.floor(physics.position.y - physics.halfHeight) * theatre.scale
+        )
+      } else {
+        theatre[canvas].bezierCurveTo(
+          Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
 
-      , Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
-      , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
+        , Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight - offset) * theatre.scale
 
-      , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
-      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+        , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+      }
 
-      theatre[canvas].bezierCurveTo(
-        Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
-      , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
+      if (notRight) {
+        theatre[canvas].lineTo(
+            Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+          , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+      } else {
+        theatre[canvas].bezierCurveTo(
+          Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
+        , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
 
-      , Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
-      , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
+        , Math.floor(physics.position.x + physics.halfWidth + offset) * theatre.scale
+        , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
 
-      , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
-      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+        , Math.floor(physics.position.x + physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+      } 
 
-      theatre[canvas].bezierCurveTo(
-        Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
-      , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
-    
-      , Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
-      , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
+      if (notBottom){
+        theatre[canvas].lineTo(  
+          Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+      } else {
+        theatre[canvas].bezierCurveTo(
+          Math.floor(physics.position.x + (physics.halfWidth/divider)) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
+      
+        , Math.floor(physics.position.x - (physics.halfWidth/divider)) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight + offset) * theatre.scale
 
-      , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
-      , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+        , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y + physics.halfHeight) * theatre.scale);
+      }
 
-      theatre[canvas].bezierCurveTo(
-        Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
-      , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
+      if (notLeft) {
+        theatre[canvas].lineTo(  
+         Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+      } else {
+        theatre[canvas].bezierCurveTo(
+          Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
+        , Math.floor(physics.position.y + (physics.halfHeight/divider)) * theatre.scale
 
-      , Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
-      , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
+        , Math.floor(physics.position.x - physics.halfWidth - offset) * theatre.scale
+        , Math.floor(physics.position.y - (physics.halfHeight/divider)) * theatre.scale
 
-      , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
-      , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
-
+        , Math.floor(physics.position.x - physics.halfWidth) * theatre.scale
+        , Math.floor(physics.position.y - physics.halfHeight) * theatre.scale);
+      }
       theatre[canvas].fill() 
     }
     /**
@@ -2348,13 +2395,21 @@ module.exports = function(config){
     
       var interaction = {
         
-        onInteraction: settings.onInteraction || function (entity) {
+          canInteract: true
 
-        },
+        , onInteraction: settings.onInteraction || function (entity) {
+
+          }
         
-        drawHighlightBox: settings.drawHighlightBox || function () {
+        , drawHighlightBox: settings.drawHighlightBox || function () {
 
-        }
+          }
+
+        , update: function (entity) {
+          // get nearest entities
+
+          // call interact
+        } 
       }
     
       return interaction
@@ -2811,6 +2866,7 @@ module.exports = {
 }());
 
 },{"./../core/settings":4}],17:[function(_dereq_,module,exports){
+
 /******************************************************************************
  * tilesHelper.js
  *
@@ -2830,6 +2886,28 @@ var tileHelper = {
   , createdTime   : Date.now()
   , grassHalmPositions: []
   , neahrestTileWalls: []
+  , offscreenCanvas: []
+  , currentDialation: 0
+
+  , init: function(){
+
+  }
+
+  , createOffscreenCanvas: function (id) {
+
+    var canvasElement    = document.createElement('canvas')
+    canvasElement.height = settings.tileSize * theatre.scale
+    canvasElement.width  = settings.tileSize * theatre.scale
+    var canvas           = canvasElement.getContext('2d')
+    canvas.height        = settings.tileSize * theatre.scale
+    canvas.width         = settings.tileSize * theatre.scale
+
+    tileHelper.offscreenCanvas[id] = {
+      canvas: canvas,
+      canvasElement: canvasElement
+    }
+
+  }
 
     /**
      * Bedeutung:
@@ -3000,6 +3078,20 @@ var tileHelper = {
       return tileHelper.tileWalls[tileArrayPositionY * worldWith + tileArrayPositionX]
     }
 
+  , calculateCurrentDialation: function () {
+      //animationSpan
+      var timeLength = 5000
+      var timeSegments = (Date.now() - tileHelper.createdTime) % timeLength
+
+      // linearNormalizeTimeSegments: -1 to 1 => mapping to smaller range
+      var linearNormalizeTimeSegments = timeSegments / timeLength
+      linearNormalizeTimeSegments *= 2
+      linearNormalizeTimeSegments -= 1
+   
+      // quadraticNormalizeTimeSegments: 0 to 1 to 0 => ^^^^^^^ => -1 is zero and 1 is zero -> continues loop for animation
+      tileHelper.currentDialation = ((-1 * Math.pow(linearNormalizeTimeSegments, 2)) + 1)
+  }
+
   , drawTiles: function(timeElapsed, map, mapWithTileTypes, worldWith, wolrdHeight){
 
       var mintileArrayPositionX = Math.floor(Math.floor(theatre.canvasBoxLeft)   / settings.tileSize)
@@ -3020,17 +3112,9 @@ var tileHelper = {
 
       var tilePosition = {}
 
-      //animationSpan
-      var timeLength = 5000
-      var timeSegments = (Date.now() - tileHelper.createdTime) % timeLength
-
-      // linearNormalizeTimeSegments: -1 to 1 => mapping to smaller range
-      var linearNormalizeTimeSegments = timeSegments / timeLength
-      linearNormalizeTimeSegments *= 2
-      linearNormalizeTimeSegments -= 1
-   
-      // quadraticNormalizeTimeSegments: 0 to 1 to 0 => ^^^^^^^ => -1 is zero and 1 is zero -> continues loop for animation
-      var quadraticNormalizeTimeSegments = ((-1 * Math.pow(linearNormalizeTimeSegments, 2)) + 1)
+      tileHelper.calculateCurrentDialation();
+      tileHelper.clearOffscreenCanvas();
+      tileHelper.drawOffscreenGrass();
 
       for (var y = mintileArrayPositionY; y <= maxtileArrayPositionY; y++) {
         for (var x = mintileArrayPositionX; x <= maxtileArrayPositionX; x++) {
@@ -3045,55 +3129,122 @@ var tileHelper = {
           tilePosition.x = (x * settings.tileSize)
           tilePosition.y = (y * settings.tileSize)
 
+          var wallType = tiletype - 1;
+
           theatre.drawSquareFromLeftTopCorner(
             'backdrop'
           , tilePosition
           , settings.tileSize +1
-          , "#CCDDAF")
+          , '#80bdbf')
+          //, "#CCDDAF")
+
+
+          theatre.drawBezierCurvedSquareFromCenter(
+            'backdrop', 
+            {
+              position: {
+                  x: tilePosition.x + (tileWidth/2)
+                , y: tilePosition.y + (tileHeight/2)
+              },
+              width: tileWidth +1,
+              height: tileHeight +1,
+              halfWidth: (tileWidth+1)/2,
+              halfHeight: (tileHeight+1)/2
+            }, 
+            '#CCDDAF', //'rgba(204, 221, 175,.4)',
+            (tileHelper.currentDialation*2) * theatre.scale * -1, 
+            (tileWidth/2),
+            (wallType & 1) !== 0,
+            (wallType & 2) !== 0,
+            (wallType & 4) !== 0,
+            (wallType & 8) !== 0);
 
           if (map[y * worldWith + x] === 2) {
-            tileHelper.drawGrass(quadraticNormalizeTimeSegments, tilePosition, tileWidth, tileHeight, 200, 6)
+            tileHelper.drawGrass(theatre.foreground, tilePosition, tileWidth, tileHeight, 6)
           } else {
-            tileHelper.drawGrass(quadraticNormalizeTimeSegments, tilePosition, tileWidth, tileHeight, 20, 3)
+            tileHelper.drawGrass(theatre.backdrop, tilePosition, tileWidth, tileHeight, 3)
           }
         }
       }
+
     }
   
-  , drawGrass: function(quadraticNormalizeTimeSegments, position, width, height, count, grassHeight){
-      theatre.foreground.beginPath();
-      theatre.foreground.lineWidth = 2
-      theatre.foreground.strokeStyle = "rgba(167,191,127,0.6)";
-      for (var i = count; i >= 0; i--) {
+  , drawGrass: function(canvas, position, width, height, grassHeight){
+      //theatre.resetCanvasTransformation("foreground")
+      //theatre.foreground.putImageData(tileHelper.highGrass, position.x * theatre.scale, position.y * theatre.scale)
+      //theatre.setCanvasTransformation("foreground");
+      canvas.drawImage(tileHelper.offscreenCanvas[grassHeight].canvasElement, position.x * theatre.scale, position.y * theatre.scale)
+    }
+  , drawOffscreenGrass: function () {
 
-        var grassHalmPosition;
-        var key = position.x + ";" + position.y + ";" + i;
-        if (tileHelper.grassHalmPositions[key]) {
-          grassHalmPosition = tileHelper.grassHalmPositions[key];
-        } else {
-          grassHalmPosition = tileHelper.grassHalmPositions[key] = {
-            x: position.x + (((Math.random() * width)  ) )
-          , y: position.y + (((Math.random() * height) ) )
-          }
-        }
-
-        theatre.foreground.moveTo(
-          Math.floor(grassHalmPosition.x) * theatre.scale
-        , Math.floor(grassHalmPosition.y) * theatre.scale
-        )
-
-        theatre.foreground.quadraticCurveTo(
-          Math.floor(grassHalmPosition.x) * theatre.scale
-        , Math.floor(grassHalmPosition.y - (grassHeight/2)) * theatre.scale
-        , Math.floor(grassHalmPosition.x + ((grassHeight*quadraticNormalizeTimeSegments)-(grassHeight/2))) * theatre.scale
-        , Math.floor(grassHalmPosition.y - grassHeight) * theatre.scale
-        )
+      var grassTall = 6;
+      if (tileHelper.offscreenCanvas[grassTall] === undefined) {
+        tileHelper.createOffscreenCanvas(grassTall);
+      }
+      var grassNormal = 3
+      if (tileHelper.offscreenCanvas[grassNormal] === undefined) {
+        tileHelper.createOffscreenCanvas(grassNormal);
       }
 
-      theatre.foreground.stroke()
-      theatre.foreground.strokeWidth = 1
+      tileHelper.drawOffscreenGrassVariation(tileHelper.offscreenCanvas[grassTall].canvas, tileHelper.currentDialation, 50, grassTall);
+      tileHelper.drawOffscreenGrassVariation(tileHelper.offscreenCanvas[grassNormal].canvas, tileHelper.currentDialation, 10, grassNormal);
+      
+      //tileHelper.highGrass = tileHelper.offscreenCanvas.getImageData(0, 0, settings.tileSize * theatre.scale, settings.tileSize * theatre.scale)
+      //tileHelper.drawOffscreenGrassVariation(tileHelper.currentDialation, 20, 3)
+  }
+
+  , drawOffscreenGrassVariation: function (canvas, quadraticNormalizeTimeSegments, count, grassHeight) {
+    
+    canvas.beginPath();
+    canvas.lineWidth = 1
+    canvas.strokeStyle = "rgba(167,191,127,0.6)";
+
+    if (tileHelper.grassHalmPositions[grassHeight]) {
+    } else {
+      tileHelper.grassHalmPositions[grassHeight] = []
     }
+
+    for (var i = count; i >= 0; i--) {
+      var grassHalmPosition;
+      if (tileHelper.grassHalmPositions[grassHeight][i]) {
+        grassHalmPosition = tileHelper.grassHalmPositions[grassHeight][i]
+      } else {
+        tileHelper.grassHalmPositions[grassHeight][i] = {
+          x: (((Math.random() * (settings.tileSize-grassHeight))+ grassHeight))
+        , y: (((Math.random() * (settings.tileSize-grassHeight))+ grassHeight))
+        }
+
+        grassHalmPosition = tileHelper.grassHalmPositions[grassHeight][i];
+      }
+
+      canvas.moveTo(
+        Math.floor(grassHalmPosition.x) * theatre.scale
+      , Math.floor(grassHalmPosition.y) * theatre.scale
+      )
+
+      canvas.quadraticCurveTo(
+        Math.floor(grassHalmPosition.x) * theatre.scale
+      , Math.floor(grassHalmPosition.y - (grassHeight/2)) * theatre.scale
+      , Math.floor(grassHalmPosition.x + ((grassHeight*quadraticNormalizeTimeSegments)-(grassHeight/2))) * theatre.scale
+      , Math.floor(grassHalmPosition.y - grassHeight) * theatre.scale
+      )
+    }
+
+    canvas.stroke()
+    canvas.lineWidth = 1
+  }
+  , clearOffscreenCanvas: function() {
+    tileHelper.offscreenCanvas.forEach(function(canvasObj){
+      canvasObj.canvas.clearRect(
+        0
+      , 0
+      , canvasObj.canvasElement.width
+      , canvasObj.canvasElement.height)
+    })  
+  }
 }
+
+tileHelper.init()
 
 module.exports = tileHelper
 

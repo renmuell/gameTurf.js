@@ -67,3 +67,29 @@ QUnit.test("Test getPositionByDegree 1", function( assert ) {
   assert.equal(result.x, 1);
   assert.equal(result.y, -9);
 });
+
+QUnit.test("Physics test", function(assert){
+  var physics = gameTurf.physics({
+    position: {
+      x: 2
+    , y: 10
+    },
+    speed: 1,
+    width: 15,
+    height: 30
+  });
+
+  physics.update(16, {
+    isRunning: false,
+    vector: {
+      x: 1,
+      y: 1
+    }
+  });
+
+  assert.equal(0.5, physics.velocity.x);
+  assert.equal(0.5, physics.velocity.y);
+
+  assert.equal(2.8, physics.position.x);
+  assert.equal(10.8, physics.position.y);
+});
